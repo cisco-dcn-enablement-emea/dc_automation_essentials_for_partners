@@ -1,0 +1,42 @@
+---
+- name: Add a new object to the API server
+  hosts: my_mac
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Test connection to the API server
+      # Sends a GET request to verify connectivity with the API server
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Check if the API server returned a 200 status code
+      # Fails the playbook if the server doesn't respond with a 200 status, ensuring server availability
+      ansible.builtin.fail:
+        msg: "Failed to get objects from the API server"
+      when: response.status != 200
+
+    - name: Add a new object to the API server
+      # Sends a POST request for each object in the loop to add them to the server, expecting a 201 status code on success
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: POST
+        body: {"data": "{{ item | to_json }}"}
+        body_format: json
+        return_content: yes
+        status_code: 201
+      register: response
+      loop:
+        - { "first_name": "Chuckles", "last_name": "McGigglepants" }
+        - { "first_name": "Giggly", "last_name": "Wobblebottom" }
+        - { "first_name": "Snickers", "last_name": "Flapdoodle" }
+        - { "first_name": "Bubbles", "last_name": "Fizzlesnort" }
+        - { "first_name": "Zany", "last_name": "Bumblefluff" }
+
+    - name: Print the response from the API server
+      # Iterates through the response results to display messages returned by the API server for each added object
+      ansible.builtin.debug:
+        msg: "{{ item.json.message }}"
+      loop: "{{ response.results }}"

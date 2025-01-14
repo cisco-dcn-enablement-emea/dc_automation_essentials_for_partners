@@ -1,0 +1,5 @@
+flask
+flask_httpauth
+flask_swagger_ui
+flask_cors
+requests

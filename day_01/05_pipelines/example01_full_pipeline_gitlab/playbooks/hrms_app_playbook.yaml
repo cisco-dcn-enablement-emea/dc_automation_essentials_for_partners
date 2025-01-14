@@ -1,0 +1,76 @@
+# ACI playbook - Create HRMS App Profile
+---
+
+- name: Create HRMS App Profile (prod)
+  hosts: apic
+  connection: local
+  gather_facts: no
+
+  vars:
+    aci_login: &aci_login
+      host: "{{ ansible_host }}"
+      username: "{{ aci_username }}"
+      password: "{{ aci_password | default(omit) }}"
+      private_key: "{{ aci_private_key | default(omit) }}"
+      certificate_name: "{{ aci_certificate_name | default(omit) }}"
+      validate_certs: "{{ aci_validate_certs }}"
+      annotation: "orchestrator:ansible"
+      state: present
+      output_path: dryrun_data.json
+
+  vars_files:
+    - ./hrms_app_vars.yaml
+
+  tasks:
+    - name: Add Application Profile
+      cisco.aci.aci_ap:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        ap: "{{ app_name }}"
+
+    - name: Add EPG
+      cisco.aci.aci_epg:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        ap: "{{ app_name }}"
+        epg: "{{ item.name }}"
+        bd: "{{ item.bd }}"
+        preferred_group: "{{ item.prefGroup }}"
+      loop: "{{ epgs }}"
+
+    - name: Add contracts
+      cisco.aci.aci_epg_to_contract:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        ap: "{{ app_name }}"
+        epg: "{{ item.0.name }}"
+        contract: "{{ item.1.contract }}"
+        contract_type: "{{ item.1.type }}"
+
+      loop: "{{ epgs | subelements('contracts', skip_missing=True) }}"
+
+    - name: Add domain binding
+      cisco.aci.aci_epg_to_domain:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        ap: "{{ app_name }}"
+        epg: "{{ item.0.name }}"
+        domain: "{{ item.1.domain }}"
+        domain_type: "{{ item.1.type }}"
+        vm_provider: "{{ item.1.provider | default(omit) }}"
+      loop: "{{ epgs | subelements('domains', skip_missing=True) }}"
+
+    - name: Deploy Static Path binding
+      cisco.aci.aci_static_binding_to_epg:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        ap: "{{ app_name }}"
+        epg: "{{ item.0.name }}"
+        encap_id: "{{ item.1.encap }}"
+        deploy_immediacy: lazy
+        interface_mode: "{{ item.1.mode }}"
+        interface_type: "{{ item.1.type }}"
+        pod_id: "{{ item.1.pod }}"
+        leafs: "{{ item.1.leafs }}"
+        interface: "{{ item.1.interface }}"
+      loop: "{{ epgs | subelements('ports', skip_missing=True) }}"

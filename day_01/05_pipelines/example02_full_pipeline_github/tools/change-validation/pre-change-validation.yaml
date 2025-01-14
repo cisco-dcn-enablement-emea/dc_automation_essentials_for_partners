@@ -1,0 +1,38 @@
+# Pre-change validation - Creates a pre-change validation using a JSON file, waits for the result and evaluates it 
+---
+
+- name: Run Pre-change validation
+  hosts: nd
+  gather_facts: no
+
+  vars:
+    nd_login: &nd_login
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: "{{ ansible_httpapi_validate_certs }}"
+      use_proxy: "{{ ansible_httpapi_use_proxy }}"
+    ig_name: dc_spain
+    site_name: MLG01
+    git_commit_sha: "{{ lookup('ansible.builtin.env', 'GITHUB_SHA') }}"
+
+  tasks:
+    - name: Create a new Pre-Change Analysis from file
+      cisco.nd.nd_pcv:
+        <<: *nd_login
+        ig_name: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        name: "pcv_{{ git_commit_sha }}"
+        file: "dryrun_data.json"
+        state: present
+
+    - name: Wait to complete and validate Pre-Change Analysis results
+      cisco.nd.nd_pcv_delta_analysis:
+        <<: *nd_login
+        insights_group: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        name: "pcv_{{ git_commit_sha }}"
+        state: validate
+        exclude_ack_anomalies: yes
+        epoch_choice: epoch2
+      register: pcv_result

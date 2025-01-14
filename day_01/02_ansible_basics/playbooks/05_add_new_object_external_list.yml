@@ -1,0 +1,33 @@
+---
+- name: Add a new object to the API server
+  hosts: my_mac
+  connection: local
+  gather_facts: no
+  vars:
+    csv_file: "../../01_api_basics/postman_files/csv_data.csv"
+  tasks:
+    - name: Test connection to the API server
+      # Sends a GET request to ensure connectivity with the API server
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Read the csv file and print each item
+      # Reads data from the specified CSV file and registers it for further processing
+      community.general.read_csv:
+        path: "{{ csv_file }}"
+      register: csv_data
+
+    - name: Add a new object to the API server
+      # Iterates over each entry from the CSV data to send a POST request, adding each as a new object on the server
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: POST
+        body: {"data": "{{ item | to_json }}"}
+        body_format: json
+        return_content: yes
+        status_code: 201
+      register: response
+      loop: "{{ csv_data.list }}"

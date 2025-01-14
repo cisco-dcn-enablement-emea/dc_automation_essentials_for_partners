@@ -1,0 +1,9 @@
+---
+- name: Print API credentials
+  hosts: my_api_servers
+  gather_facts: no
+  tasks:
+    - name: Print api_username and api_password
+      # Displays the API username for the specified hosts
+      ansible.builtin.debug:
+        msg: "api_username: {{ api_username }} api_password: {{ api_password }}"

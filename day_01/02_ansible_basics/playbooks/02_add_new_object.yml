@@ -1,0 +1,42 @@
+---
+- name: Add a new object to the API server
+  hosts: my_mac
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Test connection to the API server
+      # Uses the URI module to send a GET request to the API server to check connectivity
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Check if the API server returned a 200 status code
+      # Fails the playbook if the API server response status is not 200, indicating an unsuccessful connection
+      ansible.builtin.fail:
+        msg: "Failed to get objects from the API server"
+      when: response.status != 200
+
+    - name: Add a new object to the API server
+      # Sends a POST request to add a new object, specifying JSON data in the request body
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: POST
+        body: {"data":{"first_name": "Alessandro", "last_name": "De Prato"}}
+        body_format: json
+        return_content: yes
+        status_code: 201
+      register: response
+
+    - name: Print the response from the API server
+      # Prints the message from the API response if the object was successfully created (status 201)
+      ansible.builtin.debug:
+        msg: "{{ response.json.message }}"
+      when: response.status == 201
+
+    - name: Print the object id of the new object
+      # Outputs the ID of the newly created object from the API response for confirmation
+      ansible.builtin.debug:
+        msg: "New object id: {{ response.json.id }}"
+      when: response.status == 201

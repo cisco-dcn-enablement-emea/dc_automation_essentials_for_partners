@@ -1,0 +1,164 @@
+# Stages:
+#  - pre-change-validation:
+#     Performs syntax validation, and pre-change analysis using Nexus Dashboard Insights
+#  - deployment:
+#     Deploy changes in the infrastructure
+#  - post-change-validation:
+#     Performs post-change testing using Nexus Dashboard Insights
+
+stages:
+  - pre-change-validation
+  - deployment
+  - post-change-validation
+
+# Configure when the pipeline runs
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH &&  $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - playbooks/**/*
+
+# Configuration applicable to all jobs
+default:
+  tags:
+    - docker
+    - mdr1
+
+# Run ansible lint on the complete directory
+ansible-lint:
+  stage: pre-change-validation
+  image: python:3.11.2-slim
+  cache:
+    key: pip-packages
+    paths:
+      - /usr/local/lib/python3.11/site-packages
+  before_script:
+    - pip install yamllint
+    - pip install requests
+  script:
+    - yamllint ./playbooks
+  after_script:
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Job Results]($CI_JOB_URL)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"
+
+# Run ansible dry-run using check mode
+ansible-dry-run:
+  stage: pre-change-validation
+  image: adealdag/ansible:latest
+  needs: ["ansible-lint"]
+  before_script:
+    - ansible --version
+    - cd ./playbooks
+    - echo $VAULT_KEY > vault.key
+    - export no_proxy=$APIC_HOST,$no_proxy
+  script:
+    - ansible-playbook -i inventory.yaml --vault-password-file vault.key deploy.yaml --check
+  after_script:
+    - rm playbooks/vault.key
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Job Results]($CI_JOB_URL)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"
+  artifacts:
+    when: on_success
+    name: config-dump
+    paths:
+      - playbooks/dryrun_data.json
+    expire_in: never
+
+# Run pre-change validation on Nexus Dashboard Insights
+pre-change-validation:
+  stage: pre-change-validation
+  image: adealdag/ansible:latest
+  needs: ["ansible-dry-run"]
+  dependencies:
+    - ansible-dry-run
+  before_script:
+    - ansible --version
+    - cd tools/change-validation
+    - echo $VAULT_KEY > vault.key
+    - export no_proxy=$ND_HOST,$no_proxy
+    - rm -rf $HOME/.ansible/pc
+  script:
+    - mv $CI_PROJECT_DIR/playbooks/dryrun_data.json .
+    - ansible-playbook -i inventory.yaml --vault-password-file vault.key pre-change-validation.yaml
+  after_script:
+    - rm tools/change-validation/vault.key
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Nexus Dashboard Insights]($ND_HOST/appcenter/cisco/nexus-insights/ui/#/changeManagement/preChangeAnalysis)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"
+
+# Take a snapshot of the ACI fabric
+snapshot:
+  stage: deployment
+  image: adealdag/aci_cobra:5.2.4e
+  before_script:
+    - export no_proxy=$APIC_HOST,$no_proxy
+  script:
+    - python ./tools/trigger_backup/py_trigger_backup.py
+  after_script:
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Job Results]($CI_JOB_URL)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"
+
+# Deploy changes in production
+ansible-deploy:
+  stage: deployment
+  image: adealdag/ansible:latest
+  needs: ["snapshot"]
+  before_script:
+    - ansible --version
+    - cd playbooks
+    - echo $VAULT_KEY > vault.key
+    - export no_proxy=$APIC_HOST,$no_proxy
+  script:
+    - ansible-playbook -i inventory.yaml --vault-password-file vault.key deploy.yaml
+  after_script:
+    - rm playbooks/vault.key
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Job Results]($CI_JOB_URL)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"
+  when: manual
+
+# Run post-change validation on Nexus Dashboard Insights
+delta-analysis:
+  stage: post-change-validation
+  image: adealdag/ansible:latest
+  needs: ["ansible-deploy"]
+  before_script:
+    - ansible --version
+    - cd tools/change-validation
+    - echo $VAULT_KEY > vault.key
+    - export no_proxy=$ND_HOST,$no_proxy
+    - rm -rf $HOME/.ansible/pc
+  script:
+    - ansible-playbook -i inventory.yaml --vault-password-file vault.key post-change-validation.yaml
+  after_script:
+    - rm tools/change-validation/vault.key
+    - |
+      text="### [$CI_JOB_NAME] $CI_PROJECT_PATH - $CI_COMMIT_MESSAGE
+      * Trigger: $CI_PIPELINE_SOURCE
+      * Git SHA: $CI_COMMIT_SHA
+      * Status: $CI_JOB_STATUS
+      * Details URL: [Nexus Dashboard Insights]($ND_HOST/appcenter/cisco/nexus-insights/ui/#/troubleshoot/deltaAnalysis)"
+    - python tools/webex-message/send-webex-message.py --room-id $ROOM_ID --token $WEBEX_TOKEN --markdown-msg "$text"

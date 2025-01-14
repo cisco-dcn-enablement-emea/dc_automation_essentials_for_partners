@@ -1,0 +1,117 @@
+# ACI playbook - Create Tenant prod including networking and contracts
+---
+
+- name: Create Tenant prod
+  hosts: apic
+  connection: local
+  gather_facts: no
+
+  vars:
+    aci_login: &aci_login
+      host: "{{ ansible_host }}"
+      username: "{{ aci_username }}"
+      password: "{{ aci_password | default(omit) }}"
+      private_key: "{{ aci_private_key | default(omit) }}"
+      certificate_name: "{{ aci_certificate_name | default(omit) }}"
+      validate_certs: "{{ aci_validate_certs }}"
+      annotation: "orchestrator:ansible"
+      state: present
+      output_path: dryrun_data.json
+
+  vars_files:
+    - ./tn_prod_vars.yaml
+
+  tasks:
+    - name: Add Tenant
+      cisco.aci.aci_tenant:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+
+    - name: Add VRF
+      cisco.aci.aci_vrf:
+        <<: *aci_login
+        vrf: "{{ vrf_name }}"
+        tenant: "{{ tenant_name }}"
+        policy_control_preference: enforced
+        policy_control_direction: ingress
+
+    - name: Add Bridge Domains
+      cisco.aci.aci_bd:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.name }}"
+        vrf: "{{ vrf_name }}"
+        l2_unknown_unicast: "{{ 'proxy' if (item.mode == 'L3') else 'flood' }}"
+        arp_flooding: yes
+        enable_routing: "{{ 'yes' if (item.mode == 'L3') else 'no' }}"
+      loop: "{{ bridge_domains }}"
+
+    - name: Add subnets
+      cisco.aci.aci_bd_subnet:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.name }}"
+        gateway: "{{ item.gateway.split('/')[0] }}"
+        mask: "{{ item.gateway.split('/')[1] }}"
+        scope: "{{ item.scope }}"
+      loop: "{{ bridge_domains }}"
+      when: item.mode == 'L3'
+
+    - name: Bind bridge domain to Core L3Out
+      cisco.aci.aci_bd_to_l3out:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.name }}"
+        l3out: "{{ l3out_name }}"
+      loop: "{{ bridge_domains }}"
+      when: item.mode == 'L3' and "public" in item.scope
+
+    # Contract Definition
+
+    - name: Add contracts
+      cisco.aci.aci_contract:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.name }}"
+        description: "{{ item.descr }}"
+        scope: "{{ item.scope }}"
+      loop: "{{ contracts }}"
+
+    - name: Add contract subjects
+      cisco.aci.aci_contract_subject:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.name }}"
+        subject: "{{ item.subject }}"
+        reverse_filter: "{{ item.reverse_filter }}"
+      loop: "{{ contracts }}"
+
+    - name: Bind filters to contract subjects
+      cisco.aci.aci_contract_subject_to_filter:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.0.name }}"
+        subject: "{{ item.0.subject }}"
+        filter: "{{ item.1 }}"
+        log: log
+      loop: "{{ contracts | subelements('filters') }}"
+
+    # Contract Filters definition
+
+    - name: Add filters
+      cisco.aci.aci_filter:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        filter: "{{ item.name }}"
+      loop: "{{ filters }}"
+
+    - name: Add filter entries
+      cisco.aci.aci_filter_entry:
+        <<: *aci_login
+        tenant: "{{ tenant_name }}"
+        filter: "{{ item.0.name }}"
+        entry: "{{ item.1.entry }}"
+        ether_type: "{{ item.1.ethertype }}"
+        ip_protocol: "{{ item.1.ip_protocol }}"
+        dst_port: "{{ item.1.dst_port | default('unspecified') }}"
+      loop: "{{ filters | subelements('entries') }}"

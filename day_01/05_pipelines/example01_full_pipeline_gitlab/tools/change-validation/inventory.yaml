@@ -1,0 +1,20 @@
+dcmdr:
+  children:
+    nd:
+      hosts:
+        vnd02-mdr1.cisco.com:
+          ansible_host: vnd02-mdr1.cisco.com
+          ansible_user: ansible
+          ansible_ssh_pass: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            38313261363831666336663662323530323435323832373231393466653337333464646637653765
+            6562376664356536623134663538616664353835366437310a356132356638306636313665346534
+            63333766366130396631656639376231336638343939323338313464356230626435353938343832
+            6666396365636333660a663035333234623932373763326366343439336265663364376532376632
+            3032
+      vars:
+        ansible_connection: ansible.netcommon.httpapi
+        ansible_network_os: cisco.nd.nd
+        ansible_httpapi_validate_certs: false
+        ansible_httpapi_use_ssl: true
+        ansible_httpapi_use_proxy: false

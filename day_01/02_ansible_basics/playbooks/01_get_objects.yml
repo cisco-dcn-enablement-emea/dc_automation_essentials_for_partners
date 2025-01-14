@@ -1,0 +1,25 @@
+---
+- name: Dump all the objects currently stored in the API server
+  hosts: my_mac
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Test connection to the API server
+      # Sends a GET request to the API server to check connectivity and retrieve objects
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Check if the API server returned a 200 status code
+      # Fails the playbook if the API server response status is not 200, indicating an unsuccessful attempt to fetch objects
+      ansible.builtin.fail:
+        msg: "Failed to get objects from the API server"
+      when: response.status != 200
+
+    - name: Print the objects stored in the API server
+      # Outputs the JSON data of all objects retrieved from the API server if the response status is 200
+      ansible.builtin.debug:
+        msg: "{{ response.json }}"
+      when: response.status == 200

@@ -1,0 +1,81 @@
+tenant_name: pcv_prod_tn
+app_name: hrms_app
+epgs:
+  - name: hrms_fe_epg
+    bd: 192.168.21.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: external_to_web_con
+        type: consumer
+      - contract: web_to_app_con
+        type: consumer
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: hrms_be_epg
+    bd: 192.168.22.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: app_to_db_con
+        type: consumer
+      - contract: web_to_app_con
+        type: provider
+      - contract: app_to_auth_con
+        type: consumer
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: db_epg
+    bd: 192.168.23.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: cache_to_db_con
+        type: provider
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: db_cache_epg
+    bd: 192.168.23.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: app_to_db_con
+        type: provider
+      - contract: cache_to_db_con
+        type: consumer
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: log_epg
+    bd: 192.168.22.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: any_to_log_con
+        type: provider
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: auth_epg
+    bd: 192.168.22.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: app_to_auth_con
+        type: provider
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware

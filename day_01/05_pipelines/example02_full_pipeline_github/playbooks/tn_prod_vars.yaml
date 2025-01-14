@@ -1,0 +1,95 @@
+tenant_name: pcv_prod_tn
+vrf_name: prod_vrf
+l3out_name: pcv_shared_l3out
+
+bridge_domains:
+  - name: 192.168.21.0_24_bd
+    mode: L3
+    gateway: 192.168.21.1/24
+    scope: [public, shared]
+  - name: 192.168.22.0_24_bd
+    mode: L3
+    gateway: 192.168.22.1/24
+    scope: [private]
+  - name: 192.168.23.0_24_bd
+    mode: L3
+    gateway: 192.168.23.1/24
+    scope: [private]
+
+contracts:
+  - name: web_to_app_con
+    descr: Communication between web servers and application backend
+    scope: application-profile
+    subject: https_icmp
+    reverse_filter: yes
+    filters:
+      - https
+      - icmp
+  - name: app_to_db_con
+    descr: Communication between application backend and databases
+    scope: application-profile
+    subject: mariadb_icmp
+    reverse_filter: yes
+    filters:
+      - mariadb
+      - icmp
+  - name: any_to_log_con
+    descr: Communication between any component and log
+    scope: application-profile
+    subject: https
+    reverse_filter: yes
+    filters:
+      - https
+  - name: any_to_dns_con
+    descr: Communication between any component and dns
+    scope: application-profile
+    subject: dns_icmp
+    reverse_filter: yes
+    filters:
+      - dns
+      - icmp
+  - name: app_to_auth_con
+    descr: Communication between application backend and authentication services
+    scope: application-profile
+    subject: https_icmp
+    reverse_filter: yes
+    filters:
+      - https
+      - icmp
+  - name: cache_to_db_con
+    descr: Communication between application backend and database cache
+    scope: application-profile
+    subject: mariadb_icmp
+    reverse_filter: yes
+    filters:
+      - mariadb
+      - icmp
+
+filters:
+  - name: icmp
+    entries:
+      - entry: icmp
+        ethertype: ip
+        ip_protocol: icmp
+  - name: https
+    entries:
+      - entry: https
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: https
+  - name: dns
+    entries:
+      - entry: dns_tcp
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: dns
+      - entry: dns_udp
+        ethertype: ip
+        ip_protocol: udp
+        dst_port: dns
+  - name: mariadb
+    entries:
+      - entry: mariadb
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: 3306

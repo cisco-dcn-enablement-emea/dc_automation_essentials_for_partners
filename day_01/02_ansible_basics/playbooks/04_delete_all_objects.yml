@@ -1,0 +1,30 @@
+---
+- name: Add a new object to the API server
+  hosts: my_mac
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Test connection to the API server
+      # Sends a GET request to verify connectivity and retrieve all objects from the API server
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects"
+        method: GET
+        return_content: yes
+      register: response
+
+    - name: Check if the API server returned a 200 status code
+      # Fails the playbook if the server doesn't respond with a 200 status, indicating a failure to retrieve objects
+      ansible.builtin.fail:
+        msg: "Failed to get objects from the API server"
+      when: response.status != 200
+
+    - name: Delete all objects from the API server
+      # Sends a DELETE request for each object retrieved, using its key to construct the URL for deletion
+      ansible.builtin.uri:
+        url: "http://{{ api_username }}:{{ api_password }}@{{ ansible_host }}/objects/{{ item.key }}"
+        method: DELETE
+        return_content: yes
+      register: response
+      loop: "{{ response.json.data | dict2items }}"
+
+- import_playbook: 01_get_objects.yml

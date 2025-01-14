@@ -1,0 +1,68 @@
+# Post-change validation - Creates an Epoch Delta Analysis, waits for the result and evaluates it
+---
+
+- name: Run Post-change validation
+  hosts: nd
+  gather_facts: no
+
+  vars:
+    nd_login: &nd_login
+      host: "{{ ansible_host }}"
+      username: "{{ ansible_user }}"
+      password: "{{ ansible_ssh_pass }}"
+      validate_certs: "{{ ansible_httpapi_validate_certs }}"
+      use_proxy: "{{ ansible_httpapi_use_proxy }}"
+    ig_name: dc_spain
+    site_name: MLG01
+    git_commit_sha: "{{ lookup('ansible.builtin.env', 'GITHUB_SHA') }}"
+
+  tasks:
+    - name: Query Pre-Change Analysis performed before
+      cisco.nd.nd_pcv:
+        <<: *nd_login
+        ig_name: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        name: "pcv_{{ git_commit_sha }}"
+        state: query
+      register: pre_change_validation_info
+
+    - name: Trigger instant assurance analysis job
+      cisco.nd.nd_instant_assurance_analysis:
+        <<: *nd_login
+        insights_group: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        state: present
+      register: instant_analysis_triggered
+
+    - name: Wait until instant assurance analysis is completed
+      cisco.nd.nd_instant_assurance_analysis:
+        <<: *nd_login
+        insights_group: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        job_id: "{{ instant_analysis_triggered.current.jobId }}"
+        state: query
+      register: instant_analysis_info
+      until: instant_analysis_info.current.operSt == "COMPLETE"
+      retries: 200
+      delay: 6
+
+    - name: Trigger delta analysis
+      cisco.nd.nd_delta_analysis:
+        <<: *nd_login
+        insights_group: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        name: "delta_{{ git_commit_sha }}"
+        earlier_epoch_id: "{{ pre_change_validation_info.current.baseEpochId }}"
+        later_epoch_id: "{{ instant_analysis_info.current.epochInfo.epochId }}"
+        state: present
+      register: delta_analysis_info
+
+    - name: Validate delta analysis
+      cisco.nd.nd_delta_analysis:
+        <<: *nd_login
+        insights_group: "{{ ig_name }}"
+        site_name: "{{ site_name }}"
+        name: "delta_{{ git_commit_sha }}"
+        state: validate
+      register: delta_analysis_results
+

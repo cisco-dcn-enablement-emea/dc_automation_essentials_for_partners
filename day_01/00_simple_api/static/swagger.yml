@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  description: This is a sample API Documentation created with OpenAPI.
+  version: 1.0.46
+  title: Partner Datacenter Automation Essentials Workshop
+  contact:
+    email: adeprato@cisco.com
+servers:
+  - url: http://127.0.0.1:80/
+tags:
+  - name: Objects
+    description: Basic operation with objects
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+paths:
+  /objects:
+    get:
+      tags:
+        - Objects
+      summary: Get objects
+      description: Returns all objects or a subset of them based on the query parameter
+      security:
+        - basicAuth: []
+      parameters:
+        - name: filter
+          in: query
+          description: A query parameter to filter objects
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    post:
+      tags:
+        - Objects
+      summary: Create a new object
+      description: Adds a new object to the objects dictionary
+      security:
+        - basicAuth: []
+      requestBody:
+        description: Object to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  example: {data: {"first_name": "Alessandro", "last_name": "De Prato"}}
+            examples:
+              random:
+                value: {data: {"first_name": "John", "last_name": "Doe"}}
+                summary: New Person
+              airplane:
+                value: {data: {"model": "F-14 Tomcat", "manufacturer": "Grumman"}}
+                summary: New Airplane
+      responses:
+        '201':
+          description: Object created
+        '400':
+          description: No data provided
+        '401':
+          description: Data Not Valid
+        '409':
+          description: Object already exists
+  /objects/{obj_id}:
+    get:
+      tags:
+        - Objects
+      summary: Get an object by ID
+      description: Returns a single object
+      security:
+        - basicAuth: []
+      parameters:
+        - name: obj_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Object not found
+    put:
+      tags:
+        - Objects
+      summary: Modify an existing object
+      description: Modify an existing object by its ID
+      security:
+        - basicAuth: []
+      parameters:
+        - name: obj_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Object to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  example: {"first_name": "Alessandro", "last_name": "De Prato"}
+            examples:
+              random:
+                value: {data: {"first_name": "John", "last_name": "Doe"}}
+                summary: New Person
+              airplane:
+                value: {data: {"model": "F-14 Tomcat", "manufacturer": "Grumman"}}
+                summary: New Airplane
+      responses:
+        '200':
+          description: Object modified
+        '404':
+          description: Object not found
+    delete:
+      tags:
+        - Objects
+      summary: Delete an object
+      description: Delete an object by its ID
+      security:
+        - basicAuth: []
+      parameters:
+        - name: obj_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object deleted
+        '404':
+          description: Object not found

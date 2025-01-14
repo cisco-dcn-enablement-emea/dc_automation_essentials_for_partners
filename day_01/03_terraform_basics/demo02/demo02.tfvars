@@ -1,0 +1,6 @@
+tenant_name        = "demo_tn"
+vrf_name           = "prod_vrf"
+bd_name            = "192.168.1.0_24_bd"
+bd_arp_flood       = "yes"
+bd_unicast_routing = "yes"
+bd_unk_ucast       = "proxy"

@@ -1,0 +1,209 @@
+# Networking CICD Pipeline with pre-change and post-change validation powered by Nexus Dashboard
+name: pipeline-validate-and-deploy
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push (and merge) events on the master branch
+  push:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  # workflow_dispatch:
+
+# Environment variables
+env:
+  PYTHONWARNINGS: "ignore:Unverified HTTPS request"
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Run ansible lint on the complete directory
+  ansible-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint ./playbooks
+
+      - name: Send Webex Notification
+        uses: adealdag/action-webex-notification@python-v1
+        if: always()
+        with:
+          webexToken: ${{ secrets.WEBEX_TOKEN }}
+          roomID: ${{ secrets.ROOM_ID }}
+          markdownMsg: |
+            ### [${{ github.job }}] ${{ github.repository }} - ${{ github.event.head_commit.message }}
+            * Trigger: ${{ github.event_name }}
+            * Git SHA: ${{ github.sha }}
+            * Status: ${{ job.status }}
+            * Details URL: [Job Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  # Run ansible dry-run using check mode. Result is uploaded as artifact
+  ansible-dry-run:
+    runs-on: self-hosted
+    needs: ansible-lint
+    container: adealdag/ansible:latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run ansible playbook dry-run
+        env:
+          VAULT_KEY: ${{ secrets.VAULT_KEY }}
+        run: |
+          ansible --version
+          echo $VAULT_KEY > vault.key
+          ansible-playbook -i inventory.yaml --vault-password-file vault.key deploy.yaml --check
+          ls -al
+          rm vault.key
+        working-directory: playbooks
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: config-dump
+          path: playbooks/dryrun_data.json
+
+      - name: Send Webex Notification
+        uses: adealdag/action-webex-notification@python-v1
+        if: always()
+        with:
+          webexToken: ${{ secrets.WEBEX_TOKEN }}
+          roomID: ${{ secrets.ROOM_ID }}
+          markdownMsg: |
+            ### [${{ github.job }}] ${{ github.repository }} - ${{ github.event.head_commit.message }}
+            * Trigger: ${{ github.event_name }}
+            * Git SHA: ${{ github.sha }}
+            * Status: ${{ job.status }}
+            * Details URL: [Job Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  # Run pre-change validation on Nexus Dashboard Insights. Uses the artifact saved previously
+  pre-change-validation:
+    runs-on: self-hosted
+    needs: ansible-dry-run
+    container: adealdag/ansible:latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: config-dump
+          path: tools/change-validation
+
+      - name: Run pre-change analysis playbook
+        env:
+          VAULT_KEY: ${{ secrets.VAULT_KEY }}
+        run: |
+          ansible --version
+          rm -rf $HOME/.ansible/pc
+          echo $VAULT_KEY > vault.key
+          ansible-playbook -i inventory.yaml --vault-password-file vault.key pre-change-validation.yaml
+          rm vault.key
+        working-directory: tools/change-validation
+
+      - name: Send Webex Notification
+        uses: adealdag/action-webex-notification@python-v1
+        if: always()
+        with:
+          webexToken: ${{ secrets.WEBEX_TOKEN }}
+          roomID: ${{ secrets.ROOM_ID }}
+          markdownMsg: |
+            ### [${{ github.job }}] ${{ github.repository }} - ${{ github.event.head_commit.message }}
+            * Trigger: ${{ github.event_name }}
+            * Git SHA: ${{ github.sha }}
+            * Status: ${{ job.status }}
+            * Details URL: [Nexus Dashboard Insights](${{ secrets.ND_HOST }}/appcenter/cisco/nexus-insights/ui/#/changeManagement/preChangeAnalysis)
+
+  # Take a snapshot of the ACI fabric
+  snapshot:
+    runs-on: self-hosted
+    needs: pre-change-validation
+    container: adealdag/aci_cobra:5.2.4e
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Take an aci snapshot
+        env:
+          APIC_HOST: ${{ secrets.APIC_HOST }}
+          APIC_USERNAME: ${{ secrets.APIC_USERNAME }}
+          APIC_PASSWORD: ${{ secrets.APIC_PASSWORD }}
+        run: |
+          export no_proxy=$APIC_HOST,$no_proxy
+          python ./tools/trigger_backup/py_trigger_backup.py
+
+  # Deploy changes in production
+  ansible-deploy:
+    runs-on: self-hosted
+    needs: snapshot
+    container: adealdag/ansible:latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run ansible playbook
+        env:
+          VAULT_KEY: ${{ secrets.VAULT_KEY }}
+        run: |
+          ansible --version
+          echo $VAULT_KEY > vault.key
+          ansible-playbook -i inventory.yaml --vault-password-file vault.key deploy.yaml
+          rm vault.key
+        working-directory: playbooks
+
+      - name: Send Webex Notification
+        uses: adealdag/action-webex-notification@python-v1
+        if: always()
+        with:
+          webexToken: ${{ secrets.WEBEX_TOKEN }}
+          roomID: ${{ secrets.ROOM_ID }}
+          markdownMsg: |
+            ### [${{ github.job }}] ${{ github.repository }} - ${{ github.event.head_commit.message }}
+            * Trigger: ${{ github.event_name }}
+            * Git SHA: ${{ github.sha }}
+            * Status: ${{ job.status }}
+            * Details URL: [Job Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  # Run post-change validation on Nexus Dashboard Insights
+  post-change-validation:
+    runs-on: self-hosted
+    needs: ansible-deploy
+    container: adealdag/ansible:latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run post-change analysis playbook
+        env:
+          VAULT_KEY: ${{ secrets.VAULT_KEY }}
+        run: |
+          ansible --version
+          rm -rf $HOME/.ansible/pc
+          echo $VAULT_KEY > vault.key
+          ansible-playbook -i inventory.yaml --vault-password-file vault.key post-change-validation.yaml
+          rm vault.key
+        working-directory: tools/change-validation
+
+      - name: Send Webex Notification
+        uses: adealdag/action-webex-notification@python-v1
+        if: always()
+        with:
+          webexToken: ${{ secrets.WEBEX_TOKEN }}
+          roomID: ${{ secrets.ROOM_ID }}
+          markdownMsg: |
+            ### [${{ github.job }}] ${{ github.repository }} - ${{ github.event.head_commit.message }}
+            * Trigger: ${{ github.event_name }}
+            * Git SHA: ${{ github.sha }}
+            * Status: ${{ job.status }}
+            * Details URL: [Nexus Dashboard Insights](${{ secrets.ND_HOST }}/appcenter/cisco/nexus-insights/ui/#/troubleshoot/deltaAnalysis)
