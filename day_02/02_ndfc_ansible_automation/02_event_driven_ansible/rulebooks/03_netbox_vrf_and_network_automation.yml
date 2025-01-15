@@ -1,0 +1,25 @@
+---
+# ansible-rulebook -i inventory/hosts.yml rulebook.yml --print-events
+- name: NetBox Event Rulebook
+  hosts: ndfc01
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 8080
+  rules:
+    - name: Handle NetBox New VRF
+      condition: |
+        event.payload.event in ["updated","created"] and event.payload.model == "vrf" and  event.payload.data.tenant.name == "mil-cml-msd-wks-fabric"
+      action:
+        run_playbook:
+          name: playbooks/03a_add_new_vrf.yml
+          extra_vars:
+            data: "{{ event.payload.data }}"
+    - name: Handle NetBox New Prefix
+      condition: |
+        event.payload.event in ["updated","created"] and event.payload.model == "prefix" and  event.payload.data.tenant.name == "mil-cml-msd-wks-fabric"
+      action:
+        run_playbook:
+          name: playbooks/03b_add_new_network.yml
+          extra_vars:
+            data: "{{ event.payload.data }}"

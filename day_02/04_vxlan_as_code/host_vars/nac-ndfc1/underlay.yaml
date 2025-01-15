@@ -1,0 +1,30 @@
+vxlan:
+  underlay:
+    general:
+      routing_protocol: ospf
+      enable_ipv6_underlay: false
+      replication_mode: multicast
+      fabric_interface_numbering: p2p
+      subnet_mask: 30
+      underlay_routing_loopback_id: 0
+      underlay_vtep_loopback_id: 1
+      underlay_routing_protocol_tag: UNDERLAY
+      intra_fabric_interface_mtu: 9216
+      layer2_host_interfacde_mtu: 9216
+      unshut_host_interfaces: True
+    ipv4:
+      underlay_routing_loopback_ip_range: 172.20.71.0/24
+      underlay_vtep_loopback_ip_range: 172.20.72.0/24
+      underlay_rp_loopback_ip_range: 172.20.73.0/24
+      underlay_subnet_ip_range: 172.20.74.0/24
+    multicast:
+      group_subnet: 239.1.1.0/25
+      rendezvous_points: 2
+      rp_mode: asm
+      underlay_rp_loopback_id: 254
+      trm_enable: false
+      trm_default_group: 239.1.1.0
+      underlay_primary_rp_loopback_id: 2
+      underlay_backup_rp_loopback_id: 3
+      underlay_second_backup_rp_loopback_id: 4
+      underlay_third_backup_rp_loopback_id: 5

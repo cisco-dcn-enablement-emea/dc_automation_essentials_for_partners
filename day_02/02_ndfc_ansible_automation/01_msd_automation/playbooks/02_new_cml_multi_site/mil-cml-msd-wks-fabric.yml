@@ -1,0 +1,49 @@
+---
+- name: mil-cml-msd-wks-fabric Initial Provisioning
+  gather_facts: false
+  hosts:
+    - ndfc02
+  vars:
+    fabric_mtu: "9216"
+    fabric_name: mil-cml-msd-wks-fabric
+    child_fabrics:
+      - mil-cml-vxlan-fabric-1
+      - mil-cml-vxlan-fabric-2
+      - mil-cml-isn
+  tasks:
+    - name: Create / Update fabrics {{ fabric_name }}
+      cisco.dcnm.dcnm_fabric:
+        state: merged
+        skip_validation: False
+        config:
+        -   FABRIC_NAME: "{{ fabric_name }}"
+            FABRIC_TYPE: VXLAN_EVPN_MSD
+            BORDER_GWY_CONNECTIONS: Centralized_To_Route_Server
+            LOOPBACK100_IP_RANGE: 172.20.0.0/24
+            DCI_SUBNET_RANGE: 172.20.1.0/24
+            MS_UNDERLAY_AUTOCONFIG: true
+            RP_SERVER_IP: 172.20.0.100
+            BGP_RP_ASN: 65399
+            ENABLE_BGP_LOG_NEIGHBOR_CHANGE: true
+            ENABLE_BGP_SEND_COMM: true
+            DEPLOY: true
+    - name: Add Fabric to MSD
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: /appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/msdAdd
+        json_data: "{{ vars_dict | to_json }}"
+      vars:
+        vars_dict:
+          destFabric: "{{ fabric_name }}"
+          sourceFabric: "{{ item }}"
+      loop: "{{ child_fabrics }}"
+    - name: Recalculate
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-save"
+        json_data: "{{ {} | to_json }}"
+    - name: Deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-deploy?forceShowRun=true"
+        json_data: "{{ {} | to_json }}"

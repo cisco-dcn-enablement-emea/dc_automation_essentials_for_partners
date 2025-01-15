@@ -1,0 +1,28 @@
+---
+# Command to run the rulebook with the specified inventory and rulebook file, including an option to print incoming events for debugging.
+# ansible-rulebook -i inventory/hosts.yml -r rulebooks/02_handle_variables.yml --print-events
+
+- name: NetBox Event Rulebook
+  # Define the hosts group from the inventory where this rulebook will apply.
+  hosts: automation_vm
+  
+  sources:
+    # Define the source of events, in this case, a webhook that listens on all network interfaces at port 8080.
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 8080
+
+  rules:
+    # Rule to handle specific NetBox events related to VLAN creation.
+    - name: Handle NetBox Event
+      # Check if the event indicates that a VLAN has been created.
+      condition: |
+        event.payload.event == "created" and event.payload.model == "vlan"
+      action:
+        # Action to take when the condition is met: run a specific playbook.
+        run_playbook:
+          # Name of the playbook to execute when the condition is satisfied.
+          name: playbooks/02_echo_variables.yml
+          # Pass additional variables to the playbook, using data from the event payload.
+          extra_vars:
+            data: "{{ event.payload.data }}"

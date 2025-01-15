@@ -1,0 +1,100 @@
+---
+- name: Create Overlays
+  gather_facts: false
+  hosts:
+    - ndfc02
+  vars:
+    fabric_name: mil-cml-msd-wks-fabric
+    leaf1: 172.23.254.145
+    leaf2: 172.23.254.146
+    leaf3: 172.23.254.147
+    bbgw1: 172.23.254.143
+    bbgw2: 172.23.254.144
+    bbgw3: 172.23.254.163
+    bbgw4: 172.23.254.164
+    leaf4: 172.23.254.165
+    leaf5: 172.23.254.166
+    leaf6: 172.23.254.167
+  tasks:
+    - name: Create VRFs on MSD
+      cisco.dcnm.dcnm_vrf:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - vrf_name: marvel_vrf
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            vrf_id: 50000
+          #  attach:
+          #  - ip_address: "{{ leaf50 }}"
+          #    vrf_lite:
+          #      - peer_vrf: default
+          #        interface: Ethernet1/3
+            deploy: true
+    - name: Create Networks
+      cisco.dcnm.dcnm_network:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - net_name: nagios_servers
+            vrf_name: marvel_vrf
+            net_id: 30000
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            gw_ip_subnet: '172.19.137.254/24'
+            attach:
+              - ip_address: "{{ leaf1 }}"
+                ports: [Port-Channel101]
+              - ip_address: "{{ leaf2 }}"
+                ports: [Port-Channel101]
+              - ip_address: "{{ leaf4 }}"
+                ports: [Port-Channel201]
+              - ip_address: "{{ leaf5 }}"
+                ports: [Port-Channel201]
+              - ip_address: "{{ bbgw1 }}"
+                ports: []
+              - ip_address: "{{ bbgw2 }}"
+                ports: []
+              - ip_address: "{{ bbgw3 }}"
+                ports: []
+              - ip_address: "{{ bbgw4 }}"
+                ports: []
+            deploy: true
+          - net_name: apache_servers
+            vrf_name: marvel_vrf
+            net_template: Default_Network_Universal
+            net_id: 30001
+            net_extension_template: Default_Network_Extension_Universal
+            gw_ip_subnet: '172.19.136.254/24'
+            attach:
+              - ip_address: "{{ leaf1 }}"
+                ports: [Ethernet1/4]
+              - ip_address: "{{ leaf2 }}"
+                ports: [] #Empty list cause we do not need to attach any ports, but the switch is part of a vPC pair
+              - ip_address: "{{ leaf5 }}"
+                ports: [Ethernet1/4]
+              - ip_address: "{{ leaf4 }}"
+                ports: []
+              - ip_address: "{{ bbgw1 }}"
+                ports: []
+              - ip_address: "{{ bbgw2 }}"
+                ports: []
+              - ip_address: "{{ bbgw3 }}"
+                ports: []
+              - ip_address: "{{ bbgw4 }}"
+                ports: []
+            deploy: true
+          - net_name: mysql_servers
+            vrf_name: marvel_vrf
+            net_id: 30002
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            gw_ip_subnet: '172.19.138.254/24'
+            attach:
+              - ip_address: "{{ leaf2 }}"
+                ports: [Ethernet1/4]
+              - ip_address: "{{ leaf1 }}"
+                ports: []
+            deploy: true
+      tags:
+        - networks

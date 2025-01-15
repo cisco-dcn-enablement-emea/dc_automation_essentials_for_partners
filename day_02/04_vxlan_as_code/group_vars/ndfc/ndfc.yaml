@@ -1,0 +1,11 @@
+---
+# Parameter to ignore diff-run
+force_run_all: true
+
+# Parameters for the tasks in the 'Remove' role
+inventory_delete_mode: false
+vpc_delete_mode: false
+link_vpc_delete_mode: false
+interface_delete_mode: false
+vrf_delete_mode: true
+network_delete_mode: true

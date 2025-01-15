@@ -1,0 +1,24 @@
+---
+# This is the main entry point playbook for calling the various
+# roles in this collection.
+- hosts: nac-ndfc1
+  any_errors_fatal: true
+  gather_facts: no
+
+  roles:
+    # Prepare service model for all subsequent roles
+    # Note - The validate role is run automatically as a prerequisite to the create, deploy, and remove roles.
+    #
+    # - role: cisco.nac_dc_vxlan.validate
+    # -----------------------
+    # DataCenter Roles
+    #   Role: cisco.netascode_dc_vxlan.dtc manages direct to controller NDFC workflows
+    #
+    - role: cisco.nac_dc_vxlan.dtc.create
+      tags: 'role_create'
+
+    - role: cisco.nac_dc_vxlan.dtc.deploy
+      tags: 'role_deploy'
+
+    - role: cisco.nac_dc_vxlan.dtc.remove
+      tags: 'role_remove'

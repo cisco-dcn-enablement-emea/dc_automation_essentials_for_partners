@@ -1,0 +1,106 @@
+vxlan:
+  topology:
+    switches:
+      - name: spine-1
+        serial_number: 9YM5RXDKQIX
+        role: spine
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.125
+          subnet_mask_ipv4: 23
+      - name: spine-2
+        serial_number: 9XPDTSSP3UB
+        role: spine
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.126
+          subnet_mask_ipv4: 23
+      - name: leaf-1
+        serial_number: 9DQX8O29OPE
+        role: leaf
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.129
+          subnet_mask_ipv4: 23
+        interfaces:
+          - name: port-channel10
+            mode: trunk
+            description: 'prod_host_2'
+            enabled: true
+            pc_mode: active
+            vpc_id: 10 
+            speed: auto  
+            spanning_tree_portfast: true
+            enable_bpdu_guard: true
+            members:
+              - eth1/4
+      - name: leaf-2
+        role: leaf
+        serial_number: 9LOHZVK5M5Q
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.130
+          subnet_mask_ipv4: 23
+        interfaces:
+          - name: e1/5
+            mode: access
+            description: 'no_prod_host_2'
+            enabled: true
+            speed: auto
+            spanning_tree_portfast: true
+            enable_bpdu_guard: true
+          - name: port-channel10
+            mode: trunk
+            description: 'prod_host_2'
+            enabled: true
+            pc_mode: active
+            vpc_id: 10 
+            speed: auto  
+            spanning_tree_portfast: true
+            enable_bpdu_guard: true
+            members:
+              - eth1/4
+      - name: leaf-3
+        role: leaf
+        serial_number: 91QGNNI7FIC
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.131
+          subnet_mask_ipv4: 23
+        interfaces:
+          - name: eth1/3
+            mode: access
+            description: 'prod_host_1'
+            enabled: true
+            speed: auto
+            spanning_tree_portfast: true
+            enable_bpdu_guard: true
+          - name: eth1/4
+            mode: access
+            description: 'no_prod_host_1'
+            enabled: true
+            speed: auto
+            spanning_tree_portfast: true
+            enable_bpdu_guard: true
+      - name: border-1
+        role: border
+        serial_number: 9EYWB2DH8YQ
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.127
+          subnet_mask_ipv4: 23
+      - name: border-2
+        serial_number: 9WWJJ4ZV6DT
+        role: border
+        management:
+          default_gateway_v4: 172.23.255.254
+          management_ipv4_address: 172.23.254.128
+          subnet_mask_ipv4: 23
+    vpc_peers:
+      - peer1: leaf-1
+        peer2: leaf-2
+        peer1_peerlink_interfaces:
+          - name: Ethernet1/9
+        peer2_peerlink_interfaces:
+          - name: Ethernet1/9
+        domain_id: 46

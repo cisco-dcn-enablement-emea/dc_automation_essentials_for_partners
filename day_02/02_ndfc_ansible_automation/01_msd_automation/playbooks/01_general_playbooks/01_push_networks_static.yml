@@ -1,0 +1,38 @@
+---
+- name: Add VRFs and Networks, no variables used. Everthing is hardcoded in the playbook
+  gather_facts: false
+  hosts:
+    - ndfc02
+  tasks:
+    - name: Create VRFs
+      tags: vrfs
+      cisco.dcnm.dcnm_vrf:
+        fabric: mil-cml-msd-wks-fabric
+        state: merged
+        config:
+          - vrf_name: ansible-static-vrf
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            vrf_id: 50100
+            deploy: false
+    - name: Create Networks
+      tags: networks
+      cisco.dcnm.dcnm_network:
+        fabric: mil-cml-msd-wks-fabric
+        state: merged
+        config:
+          - net_name: ansible-static-network-1
+            int_desc: ansible-static-network-1
+            vrf_name: ansible-static-vrf
+            net_id: 202301
+            multicast_group_address: 239.1.1.1
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            vlan_id: 1331
+            gw_ip_subnet: 172.25.133.254/24
+            attach:
+              - ip_address: 172.23.254.145
+                ports: [Ethernet1/8]
+              - ip_address: 172.23.254.146
+                ports: [Ethernet1/8]
+            deploy: true

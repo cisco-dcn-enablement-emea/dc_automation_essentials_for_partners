@@ -1,0 +1,16 @@
+switch_host: "10.58.30.212"
+switch_username: "admin"
+port_channel_id: 25
+pc_physical_interfaces:
+  - "ethernet1/18"
+  - "ethernet1/19"
+vlan_id: 1025
+vlan_name: "my_ansible_vlan"
+svi_ip: "192.168.25.1/24"
+vrf_name: "my_ansible_vrf"
+bgp_as_number: 65101
+bgp_neighbor_ip: "192.168.20.26"
+bgp_remote_as: 65151
+physical_interface: "eth1/25"
+subinterface_id: 11
+subinterface_ip: "192.168.20.25/30"

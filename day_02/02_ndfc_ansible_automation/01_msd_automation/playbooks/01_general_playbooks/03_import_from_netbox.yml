@@ -1,0 +1,58 @@
+---
+- name: "Read Netbox Prefixes, Create Ansible Networks and the relative vCenter Port-Group"
+  hosts:
+    - ndfc02
+  gather_facts: false
+  vars:
+    vcenter: "10.58.30.150"
+    netbox_url: http://10.58.30.69
+    filter: "tenant=mil-cml-msd-wks-fabric"
+  tasks:
+    - name: Create VRFs
+      tags:
+        - vrf
+      cisco.dcnm.dcnm_vrf:
+        fabric: "{{ item.value.tenant.name }}"
+        state: merged
+        config:
+          - vrf_name: "{{ item.value.name }}"
+            vrf_description: "{{ item.value.name }}"
+            vrf_intf_desc: "{{ item.value.name }}"
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            deploy: false
+      loop: "{{ query('netbox.netbox.nb_lookup', 'vrfs', api_filter=filter, api_endpoint=netbox_url, token=netbox_token) | json_query('[*]') }}"
+    - name: Query IPAM and save networks
+      ansible.builtin.set_fact:
+        ndfc_networks: "{{ query('netbox.netbox.nb_lookup', 'prefixes', api_filter=filter, api_endpoint=netbox_url, token=netbox_token) | json_query('[*]') }}"
+      tags: data
+    - name: Create Networks
+      tags:
+        - networks
+      cisco.dcnm.dcnm_network:
+        fabric: "{{ item.value.tenant.name }}"
+        state: replaced
+        config:
+          - net_name: "{{ item.value.description }}"
+            vrf_name: "{{ item.value.vrf.display }}"
+            net_template: "{{ item.value.custom_fields.net_template }}"
+            net_extension_template: "{{ item.value.custom_fields.net_extension_template }}"
+            gw_ip_subnet: "{{ item.value.custom_fields.gateway }}"
+            multicast_group_address: "239.1.1.1"
+            vlan_id: "{{ item.value.vlan.vid if item.value.vlan is not none else omit }}"
+            deploy: false
+      loop: "{{ ndfc_networks }}"
+    - name: Create vlan portgroup
+      community.vmware.vmware_dvs_portgroup:
+        hostname: "{{ vcenter }}"
+        username: "Administrator@vsphere.local"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        portgroup_name: "{{ item.value.vrf.display }}|{{ item.value.description }}"
+        switch_name: "VXLAN-TOPOLOGY"
+        vlan_id: "{{ item.value.vlan.vid }}"
+        port_binding: static
+        state: present
+      delegate_to: localhost
+      loop: "{{ ndfc_networks }}" 
+      tags: data

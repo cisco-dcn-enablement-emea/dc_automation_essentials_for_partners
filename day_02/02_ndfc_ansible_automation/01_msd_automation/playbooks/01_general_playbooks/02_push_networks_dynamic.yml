@@ -1,0 +1,51 @@
+---
+- name: Add VRFs and Networks with a variable file
+  gather_facts: false
+  hosts:
+    - ndfc02
+  vars:
+    fabric_name: mil-cml-msd-wks-fabric
+  vars_files:
+    - "{{ fabric_name }}-overlays.yml"
+  tasks:
+    - name: Create VRFs 
+      tags: vrfs
+      cisco.dcnm.dcnm_vrf:
+        fabric: "{{ item.fabric }}"
+        state: merged
+        config:
+          - vrf_name: "{{ item.vrf_name }}"
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            vrf_id: "{{ item.vrf_id }}"
+      loop: "{{ vrfs }}"
+    - name: Create Networks
+      tags: networks
+      cisco.dcnm.dcnm_network:
+        fabric: "{{ item.fabric }}"
+        state: merged
+        config:
+          - net_name: "{{ item.net_name }}"
+            vrf_name: "{{ item.vrf_name }}"
+            net_id: "{{ item.net_id }}"
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            vlan_id: "{{ item.vlan_id }}"
+            gw_ip_subnet: "{{ item.gw_ip_subnet }}"
+            multicast_group_address: "{{ item.multicast_group_address }}"
+            attach:
+              "{{ item.attach }}"
+            deploy: false
+      loop: "{{ networks }}"
+    - name: Recalculate
+      tags: deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-save"
+        json_data: "{{ {} | to_json }}"
+    - name: Deploy
+      tags: deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-deploy?forceShowRun=true"
+        json_data: "{{ {} | to_json }}"

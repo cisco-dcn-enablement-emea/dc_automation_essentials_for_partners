@@ -1,0 +1,5 @@
+- hosts: automation_vm
+  connection: local
+  tasks:
+    - debug:
+        msg: "Thank you, my friend!"

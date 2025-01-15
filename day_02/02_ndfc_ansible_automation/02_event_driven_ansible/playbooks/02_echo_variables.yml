@@ -1,0 +1,7 @@
+- name: Print the Payload received via the Rulebook Engine
+  hosts: automation_vm
+  gather_facts: false
+  tasks:
+    - name: Print variable data received via the webhook
+      ansible.builtin.debug:
+        msg: '{{ data }}'

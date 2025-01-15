@@ -1,0 +1,22 @@
+vxlan:
+  global:
+    name: mil-cml-wks-fabric
+    fabric_type: VXLAN_EVPN
+    bgp_asn: 65046
+    route_reflectors: 2
+    anycast_gateway_mac: 20:20:00:00:00:aa
+    dns_servers:
+      - ip_address: 173.38.200.100
+        vrf: management
+    ntp_servers:
+      - ip_address: 173.38.201.67
+        vrf: management
+    vpc:
+      peer_link_vlan: 3600
+      peer_keep_alive: management
+      auto_recovery_time: 240
+      delay_restore_time: 150
+      peer_link_port_channel_id: 500
+      advertise_pip: False
+      advertise_pip_border_only: True
+      domain_id_range: 1-100

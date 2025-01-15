@@ -1,0 +1,16 @@
+---
+- name: Add VRFs from the extra_vars sent by the rulebook.
+  gather_facts: false
+  hosts:
+    - ndfc01
+  tasks:
+    - name: Create VRF
+      tags: vrfs
+      cisco.dcnm.dcnm_vrf:
+        fabric: "{{ data.tenant.name }}"
+        state: merged
+        config:
+          - vrf_name: "{{ data.display }}"
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            deploy: true

@@ -1,0 +1,34 @@
+devices:
+    isn1:
+      ip_address : 172.23.254.151
+      loopback0: 172.20.255.1
+    isn2:
+      ip_address : 172.23.254.153
+      loopback0: 172.20.255.2
+    isn3:
+      ip_address : 172.23.254.154
+      loopback0: 172.20.255.3
+    isn4:
+      ip_address : 172.23.254.155
+      loopback0: 172.20.255.4
+    isn5:
+      ip_address : 172.23.254.156
+      loopback0: 172.20.255.5
+p2p_eth_l3_n9kv_interface_commands:
+  - 'ip ospf network point-to-point'
+  - 'ip router ospf TRANSPORT-IXN area 0.0.0.0'
+p2p_po_interface_commands:
+  - 'ip ospf network point-to-point'
+  - 'ip router ospf TRANSPORT-IXN area 0.0.0.0'
+loopback_interface_commands:
+  - 'ip ospf network point-to-point'
+  - 'ip router ospf TRANSPORT-IXN area 0.0.0.0'
+  - 'no shutdown'
+osfp_virtual_router_policy:
+  OSPF_COST: ''
+  OSPF_ROUTING_TAG: TRANSPORT-IXN
+  OSPF_BFD: 'false'
+  OSPF_AREA_ID: ''
+  OSPF_LOG_ENABLE: 'true'
+  OSPF_NSSA: 'false'
+  OSPF_AUTH_ENABLE: 'false'

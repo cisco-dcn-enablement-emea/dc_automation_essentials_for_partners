@@ -1,0 +1,137 @@
+---
+- name: Configure Cisco NXOS
+  hosts: leaf-a11
+  gather_facts: no
+  vars_files:
+    - nxos_variables.yaml
+  tasks:
+    - name: Enable LACP Feature
+      cisco.nxos.nxos_feature:
+        feature: lacp
+        state: enabled
+
+    - name: Enable BGP Feature
+      cisco.nxos.nxos_feature:
+        feature: bgp
+        state: enabled
+
+    - name: Enable Interface VLAN Feature
+      cisco.nxos.nxos_feature:
+        feature: interface-vlan
+        state: enabled
+
+    - name: Create VRF
+      cisco.nxos.vrf_global:
+        config:
+          vrfs:
+            - name: "{{ vrf_name }}"
+              description: "VRF configured via Ansible"
+        state: merged
+
+    - name: Configure VLAN
+      cisco.nxos.nxos_vlans:
+        config:
+          - vlan_id: "{{ vlan_id }}"
+            name: "{{ vlan_name }}"
+        state: merged
+
+    - name: Configure SVI
+      cisco.nxos.nxos_interfaces:
+        config:
+          - name: vlan"{{ vlan_id }}"
+        state: merged
+
+    - name: Attach VRF to VLAN Interface
+      cisco.nxos.nxos_vrf_interface:
+        vrf: "{{ vrf_name }}"
+        interface: vlan"{{ vlan_id }}"
+        state: present
+
+    - name: Assign IP to SVI
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: vlan"{{ vlan_id }}"
+            ipv4:
+              - address: "{{ svi_ip }}"
+        state: merged
+
+    - name: Create Port-Channel
+      cisco.nxos.nxos_interfaces:
+        config:
+          - name: "port-channel{{ port_channel_id }}"
+            description: "Port-Channel for VLAN trunking"
+            mode: layer2
+        state: merged
+
+    - name: Configure LAG Interfaces
+      cisco.nxos.nxos_lag_interfaces:
+        config:
+          - name: "port-channel{{ port_channel_id }}"
+            members:
+              - member: "{{ item }}"
+                mode: active
+        state: merged
+      loop: "{{ pc_physical_interfaces }}"
+
+    - name: Configure Port-Channel Trunk
+      cisco.nxos.nxos_l2_interfaces:
+        config:
+          - name: "port-channel{{ port_channel_id }}"
+            trunk:
+              allowed_vlans: "{{ vlan_id }}"
+        state: merged
+
+    - name: Create Subinterface
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: "{{ physical_interface }}.{{ subinterface_id }}"
+            dot1q: "{{ subinterface_id }}"
+            ipv4:
+              - address: "{{ subinterface_ip }}"
+        state: merged
+      tags: subif
+
+    - name: Attach VRF to Subinterface
+      cisco.nxos.nxos_vrf_interface:
+        vrf: "{{ vrf_name }}"
+        interface: "{{ physical_interface }}.{{ subinterface_id }}"
+        state: present
+      tags: subif
+
+    - name: Assign IP to Subinterface
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: "{{ physical_interface }}.{{ subinterface_id }}"
+            dot1q: "{{ subinterface_id }}"
+            ipv4:
+              - address: "{{ subinterface_ip }}"
+        state: merged
+      tags: subif
+
+    - name: Configure BGP neighbor in the right VRF 
+      cisco.nxos.nxos_bgp_global:
+        config:
+          as_number: "{{ bgp_as_number }}"
+          log_neighbor_changes: true
+          vrfs:
+            - vrf: "{{ vrf_name }}"
+              allocate_index: 5000
+              local_as: 200
+              log_neighbor_changes: true
+              neighbors:
+                - neighbor_address: "{{ bgp_neighbor_ip }}"
+                  remote_as: "{{ bgp_remote_as }}"
+                  update_source: "{{ physical_interface }}.{{ subinterface_id }}"
+        state: merged
+
+    - name: Advertise Subinterface Network via BGP
+      cisco.nxos.nxos_bgp_address_family:
+        config:
+          as_number: "{{ bgp_as_number }}"
+          address_family:
+            - afi: ipv4
+              safi: unicast
+              vrf: "{{ vrf_name }}"
+              networks:
+                - prefix: "{{ svi_ip | ipaddr('network/prefix') }}"
+        state: merged

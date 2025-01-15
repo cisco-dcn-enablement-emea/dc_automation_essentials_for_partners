@@ -1,0 +1,20 @@
+---
+- name: Add a new NDFC network from the extra_vars sent by the rulebook.
+  gather_facts: false
+  hosts:
+    - ndfc01
+  tasks:
+    - name: Create Network
+      tags: networks
+      cisco.dcnm.dcnm_network:
+        fabric: "{{ data.tenant.name }}"
+        state: replaced
+        config:
+          - net_name: "{{ data.description }}"
+            int_desc: "{{ data.description }}"
+            vrf_name: "{{ data.vrf.name }}"
+            net_template: "{{ data.custom_fields.net_template }}"
+            net_extension_template: "{{ data.custom_fields.net_extension_template }}"
+            vlan_id: "{{ data.vlan.vid if data.vlan is not none else omit }}"
+            gw_ip_subnet: "{{ data.custom_fields.gateway }}"
+            multicast_group_address: 239.1.1.1

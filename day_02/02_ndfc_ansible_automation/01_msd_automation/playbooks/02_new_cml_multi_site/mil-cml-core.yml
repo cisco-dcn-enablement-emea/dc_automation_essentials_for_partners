@@ -1,0 +1,154 @@
+---
+- name: mil-cml-core Initial Provisioning
+  gather_facts: false
+  hosts:
+    - ndfc02
+  vars:
+    fabric_name: mil-cml-core
+    core_router: 172.23.254.152
+  tasks:
+    - name: Create Fabric "{{ fabric_name }}"
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: /appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics
+        json_data: "{{ vars_dict | to_json }}"
+      vars:
+        vars_dict:
+          fabricName: "{{ fabric_name }}"
+          fabricType: External
+          fabricTypeFriendly: External
+          fabricTechnology: External
+          templateFabricType: External Connectivity Network
+          replicationMode: IngressReplication
+          asn: '65300'
+          templateName: External_Fabric
+          nvPairs:
+            MSO_SITE_ID: ''
+            DHCP_START: ''
+            FEATURE_PTP_INTERNAL: 'false'
+            SNMP_SERVER_HOST_TRAP: 'false'
+            ENABLE_NXAPI_HTTP: 'false'
+            MPLS_LB_ID: ''
+            FEATURE_PTP: 'false'
+            AAA_SERVER_CONF: ''
+            DHCP_START_INTERNAL: ''
+            BOOTSTRAP_CONF_XE: ''
+            SUBINTERFACE_RANGE: 2-511
+            PNP_ENABLE: 'false'
+            NXC_DEST_VRF: management
+            enableRealTimeBackup: ''
+            DHCP_END: ''
+            ALLOW_NXC_PREV: 'true'
+            MGMT_V6PREFIX_INTERNAL: ''
+            NXAPI_HTTP_PORT: '80'
+            MPLS_HANDOFF: 'false'
+            PM_ENABLE_PREV: 'false'
+            MSO_CONNECTIVITY_DEPLOYED: ''
+            NXC_PROXY_PORT: '8080'
+            scheduledTime: ''
+            MGMT_V6PREFIX: ''
+            enableScheduledBackup: ''
+            PNP_ENABLE_INTERNAL: 'false'
+            NETFLOW_EXPORTER_LIST: ''
+            PREMSO_PARENT_FABRIC: ''
+            FABRIC_NAME: "{{ fabric_name }}"
+            MSO_CONTROLER_ID: ''
+            POWER_REDUNDANCY_MODE: ps-redundant
+            LOOPBACK0_IP_RANGE: 10.1.0.0/22
+            PM_ENABLE: 'false'
+            PTP_DOMAIN_ID: ''
+            ENABLE_AAA: 'false'
+            DEPLOYMENT_FREEZE: 'false'
+            DCI_SUBNET_TARGET_MASK: '30'
+            NETFLOW_MONITOR_LIST: ''
+            NXAPI_HTTPS_PORT: '443'
+            FF: External
+            BOOTSTRAP_CONF: ''
+            FABRIC_TYPE: External
+            FABRIC_FREEFORM: ''
+            NETFLOW_RECORD_LIST: ''
+            EXT_FABRIC_TYPE: External Connectivity Network
+            INBAND_MGMT_PREV: 'false'
+            NETFLOW_SAMPLER_LIST: ''
+            DOMAIN_NAME_INTERNAL: ''
+            ENABLE_RT_INTF_STATS: 'false'
+            DHCP_END_INTERNAL: ''
+            MPLS_LOOPBACK_IP_RANGE: ''
+            INBAND_ENABLE: 'false'
+            BOOTSTRAP_ENABLE: 'false'
+            NXC_PROXY_SERVER: ''
+            DHCP_ENABLE: 'false'
+            ENABLE_NETFLOW: 'false'
+            MSO_SITE_GROUP_NAME: ''
+            BOOTSTRAP_MULTISUBNET_INTERNAL: ''
+            MGMT_PREFIX_INTERNAL: ''
+            DHCP_IPV6_ENABLE_INTERNAL: ''
+            MGMT_GW: ''
+            DCI_SUBNET_RANGE: 10.10.1.0/24
+            MGMT_GW_INTERNAL: ''
+            ENABLE_NXAPI: 'false'
+            MGMT_PREFIX: ''
+            BGP_AS: '65300'
+            IS_READ_ONLY: 'false'
+            BOOTSTRAP_MULTISUBNET: "#Scope_Start_IP, Scope_End_IP, Scope_Default_Gateway, Scope_Subnet_Prefix"
+            DOMAIN_NAME: ''
+            INBAND_ENABLE_PREV: 'false'
+            CDP_ENABLE: 'false'
+            INBAND_MGMT: 'false'
+            PTP_LB_ID: ''
+            DHCP_IPV6_ENABLE: ''
+            NXC_SRC_INTF: ''
+            ENABLE_NETFLOW_PREV: 'false'
+            ALLOW_NXC: 'true'
+            OVERWRITE_GLOBAL_NXC: 'false'
+            AAA_REMOTE_IP_ENABLED: 'false'
+            INTF_STAT_LOAD_INTERVAL: ''
+    - name: Discover and Add switches
+      cisco.dcnm.dcnm_inventory:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        save: false
+        deploy: false
+        config:
+          - seed_ip: "{{ core_router }}"
+            auth_proto: MD5
+            user_name: admin
+            password: "Cisco123!"
+            max_hops: 0
+            role: edge_router
+            preserve_config: true
+    - name: Configure Interfaces {{ core_router }}
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/1
+            type: eth
+            switch:
+              - "{{ core_router }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+          - name: Ethernet1/2
+            type: eth
+            switch:
+              - "{{ core_router }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+    - name: Recalculate
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-save"
+        json_data: "{{ {} | to_json }}"
+      tags:
+        - deploy
+    - name: Deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-deploy?forceShowRun=true"
+        json_data: "{{ {} | to_json }}"
+      tags:
+        - deploy

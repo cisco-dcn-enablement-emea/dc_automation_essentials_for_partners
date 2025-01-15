@@ -1,0 +1,4 @@
+---
+
+schema_path: "{{ lookup('ansible.builtin.env', 'DC_VXLAN_SCHEMA') }}"
+enhanced_rules_path: "{{ lookup('ansible.builtin.env', 'DC_VXLAN_RULES') }}"

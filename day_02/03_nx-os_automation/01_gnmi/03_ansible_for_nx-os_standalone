@@ -1,0 +1,50 @@
+---
+- name: Configure Layer-3 SVI, BGP, and Trunk VLAN on Cisco Nexus
+  hosts: nexus_switches
+  gather_facts: no
+  vars:
+    svi_interface: "Vlan10"
+    svi_ip_address: "192.168.1.1"
+    svi_subnet_mask: "255.255.255.0"
+    bgp_as: "65001"
+    network_prefix: "192.168.1.0"
+    network_mask: "255.255.255.0"
+    trunk_interface: "Ethernet1/11"
+    trunk_vlan: 10
+
+  tasks:
+    - name: Configure SVI Interface
+      nxos_interface:
+        interface: "{{ svi_interface }}"
+        description: "Layer-3 SVI for VLAN 10"
+        enabled: true
+        mode: "layer3"
+        ip_address: "{{ svi_ip_address }}"
+        ip_mask: "{{ svi_subnet_mask }}"
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        state: present
+
+    - name: Configure BGP Network
+      nxos_bgp:
+        asn: "{{ bgp_as }}"
+        vrf: default
+        network:
+          - prefix: "{{ network_prefix }}"
+            mask: "{{ network_mask }}"
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        state: present
+
+    - name: Configure Ethernet Interface as Trunk
+      nxos_interface:
+        interface: "{{ trunk_interface }}"
+        description: "Trunk interface for VLAN {{ trunk_vlan }}"
+        mode: "trunk"
+        trunk_vlans: "{{ trunk_vlan }}"
+        host: "{{ inventory_hostname }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        state: present

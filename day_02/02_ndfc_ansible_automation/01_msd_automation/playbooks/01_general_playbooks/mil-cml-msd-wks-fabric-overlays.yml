@@ -1,0 +1,38 @@
+---
+vrfs:
+  - fabric: mil-cml-msd-wks-fabric
+    vrf_name: variable_vrf1
+    vrf_description: variable_vrf1
+    static_default_route: false
+    adv_default_routes: false
+    vlan_id: 3401
+    vrf_id: 50001
+networks:
+  - fabric: mil-cml-msd-wks-fabric
+    net_name: variable_network-1
+    vrf_name: variable_vrf1
+    net_id: 202401
+    net_template: Default_Network_Universal
+    net_extension_template: Default_Network_Extension_Universal
+    vlan_id: 1341
+    gw_ip_subnet: '172.25.135.254/24'
+    multicast_group_address: 239.1.1.1
+    attach:
+      - ip_address: 172.23.254.145
+        ports: [Ethernet1/11]
+      - ip_address: 172.23.254.146
+        ports: [Ethernet1/11]
+  - fabric: mil-cml-msd-wks-fabric
+    net_name: variable_network-2
+    vrf_name: variable_vrf1
+    net_id: 202402
+    net_template: Default_Network_Universal
+    net_extension_template: Default_Network_Extension_Universal
+    vlan_id: 1342
+    gw_ip_subnet: '172.25.136.254/24'
+    multicast_group_address: 239.1.1.1
+    attach:
+      - ip_address: 172.23.254.145
+        ports: [Ethernet1/11]
+      - ip_address: 172.23.254.146
+        ports: [Ethernet1/11]

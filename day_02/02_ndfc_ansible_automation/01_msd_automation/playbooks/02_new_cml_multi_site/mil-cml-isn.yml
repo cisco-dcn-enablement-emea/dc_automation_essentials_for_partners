@@ -1,0 +1,479 @@
+---
+- name: mil-cml-isn Initial Provisioning
+  gather_facts: false
+  hosts:
+    - ndfc02
+  vars:
+    fabric_mtu: "9216"
+    fabric_asn: "65399"
+    fabric_name: mil-cml-isn
+    # isn1: 172.23.254.151
+    # isn2: 172.23.254.153
+    # isn3: 172.23.254.154
+    # isn4: 172.23.254.155
+    # isn5: 172.23.254.156
+  vars_files:
+    - mil-cml-isn_vars.yml
+  tasks:
+    - name: Create / Update fabrics {{ fabric_name }}
+      cisco.dcnm.dcnm_fabric:
+        state: merged
+        skip_validation: False
+        config:
+        -   FABRIC_NAME: "{{ fabric_name }}"
+            FABRIC_TYPE: ISN
+            BGP_AS: "{{ fabric_asn }}"
+            IS_READ_ONLY: false
+            DEPLOY: true
+    - name: Discover and Add switches
+      cisco.dcnm.dcnm_inventory:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        save: false
+        deploy: false
+        config:
+          - seed_ip: "{{ item.value.ip_address }}"
+            auth_proto: MD5
+            user_name: "admin"
+            password: "Cisco123!"
+            max_hops: 0
+            role: core_router
+            preserve_config: true
+      loop: "{{ devices | dict2items }}"
+    - name: Create loopback 0 interfaces
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - name: lo0
+            type: lo
+            switch:
+              - "{{ item.value.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: lo
+              int_vrf: ""
+              ipv4_addr: "{{ item.value.loopback0 }}"
+              route_tag: "54321"
+              cmds:
+                "{{ loopback_interface_commands }}"
+              description: "Device Loopback"
+      loop: "{{ devices | dict2items }}"
+      tags:
+        - interfaces
+    - name: Create loopback 100 interfaces
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - name: lo100                       
+            type: lo                          
+            switch:
+              - "{{ devices.isn5.ip_address }}"            
+            deploy: false                      
+            profile:
+              admin_state: true               
+              mode: lo                        
+              int_vrf: ""                     
+              ipv4_addr: 172.20.0.100        
+              route_tag: "54321"                   
+              cmds:                           
+                - no shutdown
+              description: "Multi-Site Loopback"
+      tags:
+        - interfaces
+    - name: Push basic configuration on ISN Devices - RR Clients
+      cisco.dcnm.dcnm_policy:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        deploy: false
+        config:
+          - name: feature_lacp
+            create_additional_policy: false
+            priority: 100
+          - name: feature_ospf
+            create_additional_policy: false
+            priority: 100
+          - name: copp_policy
+            create_additional_policy: false
+            priority: 100
+            policy_vars:
+              POLICY: 'lenient'
+          - name: router_ospf_classic
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              "{{ {'OSPF_ROUTER_ID': item.value.loopback0} | ansible.builtin.combine(osfp_virtual_router_policy) }}"
+          - name: v4_bgp_rr_neighbor
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR_IP: "{{ devices.isn5.loopback0 }}"
+              INTF_NAME: 'Loopback0'
+          - name: bgp_neighbor_next_hop_self
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR: "{{ devices.isn5.loopback0 }}"
+              IP_TYPE: 'ipv4'
+          - switch:
+              - ip: "{{ item.value.ip_address }}"
+      loop: "{{ devices | dict2items | rejectattr('key', 'equalto', 'isn5')}}"
+      tags:
+        - configuration
+    - name: Push basic configuration on ISN Device isn5 - Route Reflector
+      cisco.dcnm.dcnm_policy:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        deploy: false
+        config:
+          - name: feature_ospf
+            create_additional_policy: false
+            priority: 100
+          - name: copp_policy
+            create_additional_policy: false
+            priority: 100
+            policy_vars:
+              POLICY: 'lenient'
+          - name: router_ospf_classic
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              "{{ {'OSPF_ROUTER_ID': item.value.loopback0} | ansible.builtin.combine(osfp_virtual_router_policy) }}"
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR_IP: '172.20.255.1'
+              INTF_NAME: 'Loopback0'
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR_IP: '172.20.255.2'
+              INTF_NAME: 'Loopback0'
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR_IP: '172.20.255.3'
+              INTF_NAME: 'Loopback0'
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: "{{ fabric_asn }}"
+              BGP_NEIGHBOR_IP: '172.20.255.4'
+              INTF_NAME: 'Loopback0'
+          - switch:
+              - ip: "{{ item.value.ip_address }}"
+      loop: "{{ devices | dict2items | selectattr('key', 'equalto', 'isn5')}}"
+      tags:
+        - configuration
+    - name: Configure Interfaces on ISN 1
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/5
+            type: eth
+            switch:
+              - "{{ devices.isn1.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.1'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn5"
+          - name: Ethernet1/3
+            type: eth
+            switch:
+              - "{{ devices.isn1.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.17'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn3"
+          - name: po999
+            type: pc
+            switch:
+              - "{{ devices.isn1.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/4
+                - e1/6
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.25'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                "{{ p2p_po_interface_commands }}"
+              description: "to_isn2"
+      tags:
+        - physical_interfaces
+    - name: Configure Interfaces on ISN 2
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/5
+            type: eth
+            switch:
+              - "{{ devices.isn2.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.5'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn5"
+          - name: Ethernet1/3
+            type: eth
+            switch:
+              - "{{ devices.isn2.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.21'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn4"
+          - name: po999
+            type: pc
+            switch:
+              - "{{ devices.isn2.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/4
+                - e1/6
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.26'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                "{{ p2p_po_interface_commands }}"
+              description: "to_isn1"
+      tags:
+        - physical_interfaces
+    - name: Configure Interfaces on ISN 3
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/5
+            type: eth
+            switch:
+              - "{{ devices.isn3.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.9'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn5"
+          - name: Ethernet1/3
+            type: eth
+            switch:
+              - "{{ devices.isn3.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.18'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn1"
+          - name: po999
+            type: pc
+            switch:
+              - "{{ devices.isn3.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/4
+                - e1/6
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.29'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                "{{ p2p_po_interface_commands }}"
+              description: "to_isn4"
+      tags:
+        - physical_interfaces
+    - name: Configure Interfaces on ISN 4
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/5
+            type: eth
+            switch:
+              - "{{ devices.isn4.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.13'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn5"
+          - name: Ethernet1/3
+            type: eth
+            switch:
+              - "{{ devices.isn4.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.22'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn2"
+          - name: po999
+            type: pc
+            switch:
+              - "{{ devices.isn3.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/4
+                - e1/6
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.30'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                "{{ p2p_po_interface_commands }}"
+              description: "to_isn3"
+      tags:
+        - physical_interfaces
+    - name: Configure Interfaces on ISN 5
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: replaced
+        config:
+          - name: Ethernet1/1
+            type: eth
+            switch:
+              - "{{ devices.isn5.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.2'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn1"
+          - name: Ethernet1/2
+            type: eth
+            switch:
+              - "{{ devices.isn5.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.6'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn2"
+          - name: Ethernet1/3
+            type: eth
+            switch:
+              - "{{ devices.isn5.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.10'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn3"
+          - name: Ethernet1/4
+            type: eth
+            switch:
+              - "{{ devices.isn5.ip_address }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.20.254.14'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                "{{ p2p_eth_l3_n9kv_interface_commands }}"
+              description: "to_isn4"
+      tags:
+        - physical_interfaces
+    - name: Recalculate
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-save"
+        json_data: "{{ {} | to_json }}"
+    - name: Deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-deploy?forceShowRun=true"
+        json_data: "{{ {} | to_json }}"

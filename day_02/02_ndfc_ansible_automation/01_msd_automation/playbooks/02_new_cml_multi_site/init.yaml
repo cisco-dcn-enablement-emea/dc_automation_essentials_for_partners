@@ -1,0 +1,21 @@
+---
+
+# This playbook is used to deploy all the fabrics
+
+- name: Deploy VXLAN Site 1
+  import_playbook: mil-cml-vxlan-fabric-1.yml
+
+- name: Deploy VXLAN Site 2
+  import_playbook: mil-cml-vxlan-fabric-2.yml
+
+- name: Deploy Overlays
+  import_playbook: overlays.yml
+
+- name: Deploy ISN Fabric
+  import_playbook: mil-cml-isn
+
+- name: Deploy MSD Fabric
+  import_playbook: mil-cml-msd-wks-fabric.yml
+
+- name: Deploy CORE Fabric
+  import_playbook: mil-cml-core.yml
