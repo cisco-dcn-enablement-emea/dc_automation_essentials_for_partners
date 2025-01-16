@@ -29,7 +29,6 @@ The configurations and examples in this repository were developed for a controll
   - [02_cisco_ndo_api](#02_cisco_ndo_api)
   - [03_cisco_aci_examples](#03_cisco_aci_examples)
   - [04_cisco_ndo_examples](#04_cisco_ndo_examples)
-- [Professional Disclaimer](#professional-disclaimer)
 - [License](#license)
 
 ---
