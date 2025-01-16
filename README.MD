@@ -44,46 +44,20 @@ This repository provides hands-on examples and exercises to help participants le
 ## Day 1
 
 ### 00_simple_api
-A simple API implementation using Flask. This API provides basic CRUD operations for managing objects.
-
-#### Running the API
-1. Install dependencies:
-   ```sh
-   pip install -r ../../requirements.txt
-   ```
-2. Start the API:
-   ```sh
-   python application.py
-   ```
-3. Access the API at `http://127.0.0.1`.
+A simple API implementation using Flask. This API provides basic CRUD operations for managing objects and can be used for some of Day01 exercises.
 
 ### 01_api_basics
 Basic API interaction examples using curl, Postman, and Python.
 
-#### Contents
-- **`curl_examples`**: Scripts demonstrating API interaction with curl.
-- **`postman_files`**: Postman collections and environment files.
-- **`python_examples`**: Python scripts for API interaction.
-
 ### 02_ansible_basics
 Introduction to Ansible, including inventory management and playbooks.
-
-#### Contents
-- **`inventory`**: Sample Ansible inventory files.
-- **`playbooks`**: Ansible playbooks for demos.
 
 ### 03_terraform_basics
 Basic Terraform examples showcasing multiple demos.
 
-#### Contents
-- **`demo01`** to **`demo05`**: Terraform configuration files demonstrating various scenarios.
-
 ### 05_pipelines
 CI/CD pipeline examples leveraging GitLab CI and GitHub Actions.
 
-#### Contents
-- **`example01_full_pipeline_gitlab`**: A complete pipeline implementation with GitLab CI.
-- **`example02_full_pipeline_github`**: A complete pipeline implementation with GitHub Actions.
 
 ---
 
@@ -99,7 +73,7 @@ Scripts and libraries for interacting with Cisco's Nexus Dashboard Fabric Contro
 Ansible automation examples for NDFC.
 
 ### 03_nx-os_automation
-Automation examples for Cisco NX-OS using Terraform and other tools.
+Automation examples for Cisco NX-OS using Terraform, Ansible and GNMI.
 
 ### 04_vxlan_as_code
 Ansible NDFC VXLAN Data Model examples.
