@@ -6,7 +6,7 @@ Welcome to the **Automation Workshop** repository! This repository contains a co
 
 ## Professional Disclaimer
 
-The configurations and examples in this repository were developed for a controlled lab environment. While they are valuable as references or starting points for automation projects, they should not be directly applied to production environments without thorough testing. Adjustments may be required to ensure compatibility, stability, and security in your specific environment.
+The configurations and examples in this repository were developed for a controlled lab environment and are provided “as-is” without any warranty, express or implied, including but not limited to warranties of fitness for a particular purpose; while they serve as valuable references or starting points for automation projects, they should not be directly applied to production environments without thorough testing and necessary adjustments to ensure compatibility, stability, and security in your specific environment.
 
 ---
 
