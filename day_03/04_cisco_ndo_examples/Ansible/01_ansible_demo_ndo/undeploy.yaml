@@ -1,0 +1,15 @@
+---
+- name: Undeploy all templates in the expected order
+  block:
+    - name: Undeploy templates
+      cisco.mso.ndo_schema_template_deploy:
+        schema: ndo_ansible_demo
+        template: "{{ item.template }}"
+        sites: "{{ item.sites }}"
+        state: undeploy
+      loop:
+        - { template: MLG1 Only, sites: [MLG1] }
+        - { template: MDR1 Only, sites: [MDR1] }
+        - { template: Stretched, sites: [MDR1, MLG1] }
+        - { template: StretchedBase, sites: [MDR1, MLG1] }
+  tags: undeploy

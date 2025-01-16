@@ -1,0 +1,55 @@
+# ACI playbook - Create Tenant - Networking
+---
+- name: Configure Tenant Networking
+  hosts: apic
+  gather_facts: no
+
+  vars_files:
+    - dev_tn_variables.yaml
+
+  tasks:
+    - name: Add VRF
+      cisco.aci.aci_vrf:
+        tenant: "{{ tenant_name }}"
+        vrf: "{{ item.name }}"
+        name_alias: "{{ item.alias | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        ip_data_plane_learning: "enabled"
+        policy_control_direction: "ingress"
+        policy_control_preference: "enforced"
+        state: present
+      loop: "{{ vrfs }}"
+
+    - name: Add Bridge Domain
+      cisco.aci.aci_bd:
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.name }}"
+        name_alias: "{{ item.alias | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        vrf: "{{ item.vrf }}"
+        l2_unknown_unicast: "{{ 'proxy' if (item.mode == 'L3') else 'flood' }}"
+        l3_unknown_multicast: flood
+        arp_flooding: yes
+        enable_routing: "{{ 'yes' if (item.mode == 'L3') else 'no' }}"
+        state: present
+      loop: "{{ bridge_domains }}"
+
+    - name: Create a subnet
+      cisco.aci.aci_bd_subnet:
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.0.name }}"
+        gateway: "{{ item.1.ip.split('/')[0] }}"
+        mask: "{{ item.1.ip.split('/')[1] }}"
+        scope: "{{ [('public' if item.1.public else 'private'), ('shared' if item.1.shared else '')] | select() }}"
+        state: present
+      loop: "{{ bridge_domains | subelements('subnets', skip_missing=True) }}"
+      when: item.0.mode == "L3"
+
+    - name: Bind bridge domain to Core L3Out
+      cisco.aci.aci_bd_to_l3out:
+        tenant: "{{ tenant_name }}"
+        bd: "{{ item.0.name }}"
+        l3out: "{{ item.1.l3out }}"
+        state: present
+      loop: "{{ bridge_domains | subelements('l3out_associations', skip_missing=True) }}"
+      when: item.0.mode == "L3"

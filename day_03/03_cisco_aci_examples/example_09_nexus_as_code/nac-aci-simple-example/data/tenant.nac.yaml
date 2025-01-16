@@ -1,0 +1,35 @@
+---
+apic:
+  tenants:
+    - name: nexusascode
+
+      vrfs:
+        - name: main
+
+      bridge_domains:
+        - name: 10.1.200.0_24
+          vrf: main
+          subnets:
+            - ip: 10.1.200.1/24
+
+        - name: 10.1.201.0_24
+          vrf: main
+          subnets:
+            - ip: 10.1.201.1/24
+
+        - name: 10.1.202.0_24
+          vrf: main
+          subnets:
+            - ip: 10.1.202.1/24
+
+      application_profiles:
+        - name: network-segments
+          endpoint_groups:
+            - name: vlan200
+              bridge_domain: 10.1.200.0_24
+
+            - name: vlan201
+              bridge_domain: 10.1.201.0_24
+
+            - name: vlan202
+              bridge_domain: 10.1.202.0_24

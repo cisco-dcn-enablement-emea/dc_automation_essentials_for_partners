@@ -1,0 +1,98 @@
+---
+- name: Configure objects in Stretched template
+  block:
+    - name: Add BD
+      cisco.mso.mso_schema_template_bd:
+        schema: ndo_ansible_demo
+        template: Stretched
+        bd: 192.168.1.0_24_bd
+        vrf:
+          name: main_vrf
+          template: StretchedBase
+        arp_flooding: yes
+        layer2_stretch: yes
+        layer2_unknown_unicast: proxy
+        intersite_bum_traffic: yes
+        unicast_routing: yes
+        subnets:
+          - subnet: 192.168.1.1/24
+        state: "{{ state }}"
+
+    - name: Add BD
+      cisco.mso.mso_schema_template_bd:
+        schema: ndo_ansible_demo
+        template: Stretched
+        bd: 192.168.2.0_24_bd
+        vrf:
+          name: main_vrf
+          template: StretchedBase
+        arp_flooding: yes
+        layer2_stretch: yes
+        layer2_unknown_unicast: proxy
+        intersite_bum_traffic: yes
+        unicast_routing: yes
+        subnets:
+          - subnet: 192.168.2.1/24
+        state: "{{ state }}"
+
+    - name: Add ANP
+      cisco.mso.mso_schema_template_anp:
+        schema: ndo_ansible_demo
+        template: Stretched
+        anp: demo_app
+        state: "{{ state }}"
+
+    - name: Add Frontend EPG
+      cisco.mso.mso_schema_template_anp_epg:
+        schema: ndo_ansible_demo
+        template: Stretched
+        anp: demo_app
+        epg: frontend_epg
+        preferred_group: yes
+        bd:
+          name: 192.168.1.0_24_bd
+        state: "{{ state }}"
+
+    - name: Add Backend EPG
+      cisco.mso.mso_schema_template_anp_epg:
+        schema: ndo_ansible_demo
+        template: Stretched
+        anp: demo_app
+        epg: backend_epg
+        preferred_group: yes
+        bd:
+          name: 192.168.2.0_24_bd
+        state: "{{ state }}"
+
+    - name: Add VMM Domain to EPGs in site 1
+      cisco.mso.mso_schema_site_anp_epg_domain:
+        schema: ndo_ansible_demo
+        template: Stretched
+        site: MDR1
+        anp: demo_app
+        epg: "{{ item }}"
+        domain_association_type: vmmDomain
+        domain_profile: vmm_vds
+        deployment_immediacy: lazy
+        resolution_immediacy: pre-provision
+        state: "{{ state }}"
+      loop:
+        - frontend_epg
+        - backend_epg
+
+    - name: Add VMM Domain to EPGs in Site 2
+      cisco.mso.mso_schema_site_anp_epg_domain:
+        schema: ndo_ansible_demo
+        template: Stretched
+        site: MLG1
+        anp: demo_app
+        epg: "{{ item }}"
+        domain_association_type: vmmDomain
+        domain_profile: vmm_vds_mlg
+        deployment_immediacy: lazy
+        resolution_immediacy: pre-provision
+        state: "{{ state }}"
+      loop:
+        - frontend_epg
+        - backend_epg
+  tags: configure

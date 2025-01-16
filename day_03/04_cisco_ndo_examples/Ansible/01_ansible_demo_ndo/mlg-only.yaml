@@ -1,0 +1,7 @@
+---
+- name: Configure objects in MLG1 Only template
+  block:
+    - name: Print message
+      ansible.builtin.debug:
+        msg: "No objects to configure in MLG1 Only template"
+  tags: configure

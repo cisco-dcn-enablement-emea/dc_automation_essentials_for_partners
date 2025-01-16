@@ -1,0 +1,58 @@
+vxlan:
+  overlay_services:
+    vrfs:
+      - name: new_vrf
+        vrf_vlan_name: new_vrf
+        vrf_intf_desc: new_vrf
+        vrf_description: new_vrf
+        vrf_int_mtu: 9216
+        loopback_route_tag: 12345
+        adv_host_routes: false
+        adv_default_routes: false
+        static_default_route: false
+        redist_direct_routemap: fabric-rmap-redist-subnet
+        vrf_attach_group: border_leaves
+    vrf_attach_groups:
+      - name: border_leaves
+        switches:
+          - hostname: border-1
+          - hostname: border-2
+      - name: compute_leaves
+        switches:
+          - hostname: leaf-1
+          - hostname: leaf-2
+          - hostname: leaf-3
+    networks:
+      - name: new_network_1
+        is_l2_only: false
+        vrf_name: new_vrf
+        vlan_name: new_network_1
+        gw_ip_address: 172.25.100.254/24
+        int_desc: new_vrf
+        mtu_l3intf: 9000
+        multicast_group_address: 239.1.1.1
+        network_attach_group: new_network_1_access
+      - name: new_network_2
+        vlan_id: 2310
+        is_l2_only: false
+        vrf_name: new_vrf
+        vlan_name: new_network_2
+        gw_ip_address: 172.25.101.254/24
+        int_desc: new_vrf
+        mtu_l3intf: 9000
+        multicast_group_address: 239.1.1.2
+        network_attach_group: new_network_2_trunk
+    network_attach_groups:
+      - name: new_network_1_access
+        switches:
+          - hostname: leaf-3
+            ports:
+              - Ethernet1/4
+      - name: new_network_2_trunk
+        switches:
+          - hostname: leaf-1
+            ports:
+              - Port-Channel10
+          - hostname: leaf-2
+            ports:
+              - Port-Channel10

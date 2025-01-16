@@ -1,0 +1,192 @@
+aci:
+  tenant:
+    - name: development_tn
+      description: Development Tenant for the development team
+
+      vrf:
+        - name: development_vrf
+          description: Development VRF for the development tenant
+
+      bd:
+        - name: 192.168.1.0_24_bd
+          vrf: development_vrf
+          mode: L3
+          subnet:
+            - ip: 192.168.1.1/24
+              public: yes
+              shared: yes
+          l3out:
+            - name: core_l3out
+        - name: 192.168.2.0_24_bd
+          vrf: development_vrf
+          mode: L3
+          subnet:
+            - ip: 192.168.2.1/24
+              public: yes
+              shared: yes
+          l3out:
+            - name: core_l3out
+        - name: 192.168.3.0_24_bd
+          vrf: development_vrf
+          mode: L3
+          subnet:
+            - ip: 192.168.3.1/24
+              public: no
+              shared: no
+
+      app:
+        - name: app_demo_ap
+          description: Application Profile for our demo application
+
+          epg:
+            - name: web_epg
+              bd: 192.168.1.0_24_bd
+              prefGroup: no
+              contract:
+                - name: shared_core_l3out_con
+                  type: consumer
+                - name: web_to_app_con
+                  type: consumer
+                - name: any_to_log_con
+                  type: consumer
+              domain:
+                - type: vmm
+                  name: vmm_vds_mlg
+                  provider: vmware
+            - name: app_epg
+              bd: 192.168.1.0_24_bd
+              prefGroup: no
+              contract:
+                - name: app_to_db_con
+                  type: consumer
+                - name: web_to_app_con
+                  type: provider
+                - name: any_to_log_con
+                  type: consumer
+              domain:
+                - type: vmm
+                  name: vmm_vds_mlg
+                  provider: vmware
+            - name: db_epg
+              bd: 192.168.2.0_24_bd
+              prefGroup: no
+              contract:
+                - name: app_to_db_con
+                  type: provider
+                - name: any_to_log_con
+                  type: consumer
+              domain:
+                - type: vmm
+                  name: vmm_vds_mlg
+                  provider: vmware
+            - name: log_epg
+              bd: 192.168.3.0_24_bd
+              prefGroup: no
+              contract:
+                - name: any_to_log_con
+                  type: provider
+              domain:
+                - type: vmm
+                  name: vmm_vds_mlg
+                  provider: vmware
+              static_port:
+                - pod: 1
+                  leafs: 1101
+                  interface: 1/31
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1101
+                  interface: 1/32
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1101
+                  interface: 1/33
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1102
+                  interface: 1/31
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1102
+                  interface: 1/32
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1102
+                  interface: 1/33
+                  interface_type: switch_port
+                  mode: access
+                  encap_id: 100
+                - pod: 1
+                  leafs: 1101-1102
+                  interface: vpc_test
+                  interface_type: vpc
+                  mode: trunk
+                  encap_id: 100
+
+      contract:
+        - name: web_to_app_con
+          descr: Communication between web servers and application backend
+          scope: application-profile
+          subject:
+            name: http_https
+            reverse_filter: yes
+            filter:
+              - name: http
+              - name: https
+        - name: app_to_db_con
+          descr: Communication between application backend and databases
+          scope: application-profile
+          subject:
+            - name: mongodb
+              reverse_filter: yes
+              filters:
+                - name: mongodb
+        - name: any_to_log_con
+          descr: Communication between application backend and databases
+          scope: application-profile
+          subject:
+            - name: log
+              reverse_filter: yes
+              filters:
+                - name: logstash
+
+      filter:
+        - name: http
+          entry:
+            - name: http
+              ethertype: ip
+              ip_protocol: tcp
+              dst_port: http
+        - name: https
+          entry:
+            - name: https
+              ethertype: ip
+              ip_protocol: tcp
+              dst_port: https
+        - name: mongodb
+          entry:
+            - name: mongodb
+              ethertype: ip
+              ip_protocol: tcp
+              dst_port_start: 27017
+              dst_port_end: 27020
+        - name: logstash
+          entry:
+            - name: logstash_beats
+              ethertype: ip
+              ip_protocol: tcp
+              dst_port: 5044
+            - name: logstash_api
+              ethertype: ip
+              ip_protocol: tcp
+              dst_port: 9600

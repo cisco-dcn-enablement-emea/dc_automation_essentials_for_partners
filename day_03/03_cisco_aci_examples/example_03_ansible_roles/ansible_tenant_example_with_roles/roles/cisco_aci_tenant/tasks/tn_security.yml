@@ -1,0 +1,49 @@
+# Create Tenant Security Policies
+---
+- name: Create Tenant Security Policies
+  block:
+    - name: Add contracts
+      cisco.aci.aci_contract:
+        tenant: "{{ item.tenant_name }}"
+        contract: "{{ item.tenant_contract_name }}"
+        description: "{{ item.tenant_contract_description | default(omit) }}"
+        scope: "{{ item.tenant_contract_scope | default('context') }}"
+      loop: "{{ data | aci_listify('tenant', 'contract') }}"
+
+    - name: Add contract subjects
+      cisco.aci.aci_contract_subject:
+        tenant: "{{ item.tenant_name }}"
+        contract: "{{ item.tenant_contract_name }}"
+        subject: "{{ item.tenant_contract_subject_name }}"
+        reverse_filter: "{{ item.tenant_contract_subject_reverse_filter }}"
+      loop: "{{ data | aci_listify('tenant', 'contract', 'subject') }}"
+
+    - name: Bind filters to contract subjects
+      cisco.aci.aci_contract_subject_to_filter:
+        tenant: "{{ item.tenant_name }}"
+        contract: "{{ item.tenant_contract_name }}"
+        subject: "{{ item.tenant_contract_subject_name }}"
+        filter: "{{ item.tenant_contract_subject_filter_name }}"
+        log: log
+      loop: "{{ data | aci_listify('tenant', 'contract', 'subject', 'filter') }}"
+
+    - name: Add filters
+      cisco.aci.aci_filter:
+        tenant: "{{ item.tenant_name }}"
+        filter: "{{ item.tenant_filter_name }}"
+      loop: "{{ data | aci_listify('tenant', 'filter') }}"
+
+    - name: Add filter entries
+      cisco.aci.aci_filter_entry:
+        tenant: "{{ item.tenant_name }}"
+        filter: "{{ item.tenant_filter_name }}"
+        entry: "{{ item.tenant_filter_entry_name }}"
+        ether_type: "{{ item.tenant_filter_entry_ethertype }}"
+        ip_protocol: "{{ item.tenant_filter_entry_ip_protocol }}"
+        src_port: "{{ item.tenant_filter_entry_src_port | default(omit) }}"
+        src_port_start: "{{ item.tenant_filter_entry_src_port_start | default(omit) }}"
+        src_port_end: "{{ item.tenant_filter_entry_src_port_end | default(omit) }}"
+        dst_port: "{{ item.tenant_filter_entry_dst_port | default(omit) }}"
+        dst_port_start: "{{ item.tenant_filter_entry_dst_port_start | default(omit) }}"
+        dst_port_end: "{{ item.tenant_filter_entry_dst_port_end | default(omit) }}"
+      loop: "{{ data | aci_listify('tenant', 'filter', 'entry') }}"

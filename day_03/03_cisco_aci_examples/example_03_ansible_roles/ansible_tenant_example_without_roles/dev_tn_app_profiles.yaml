@@ -1,0 +1,59 @@
+# ACI playbook - Create Tenant - Application Profiles
+---
+- name: Configure Tenant App Profiles
+  hosts: apic
+  gather_facts: no
+
+  vars_files:
+    - dev_tn_variables.yaml
+
+  tasks:
+    - name: Add Application Profile
+      cisco.aci.aci_ap:
+        tenant: "{{ tenant_name }}"
+        ap: "{{ item.name }}"
+        name_alias: "{{ item.alias | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        state: present
+      loop: "{{ app_profiles }}"
+
+    - name: Add EPG
+      cisco.aci.aci_epg:
+        tenant: "{{ tenant_name }}"
+        ap: "{{ item.ap }}"
+        epg: "{{ item.name }}"
+        name_alias: "{{ item.alias | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        bd: "{{ item.bd }}"
+        preferred_group: "{{ item.prefGroup }}"
+        state: present
+      loop: "{{ epgs }}"
+
+    - name: Add contracts for app demo
+      cisco.aci.aci_epg_to_contract:
+        tenant: "{{ tenant_name }}"
+        ap: "{{ item.0.ap }}"
+        epg: "{{ item.0.name }}"
+        contract: "{{ item.1.contract }}"
+        contract_type: "{{ item.1.type }}"
+        state: present
+      loop: "{{ epgs | subelements('contracts', skip_missing=True) }}"
+
+    - name: Add domain binding
+      cisco.aci.aci_epg_to_domain:
+        tenant: "{{ tenant_name }}"
+        ap: "{{ item.0.ap }}"
+        epg: "{{ item.0.name }}"
+        domain: "{{ item.1.domain }}"
+        domain_type: "{{ item.1.type }}"
+        vm_provider: "{{ item.1.provider | default(omit) }}"
+      loop: "{{ epgs | subelements('domains', skip_missing=True) }}"
+
+    - name: Deploy Static Path binding
+      cisco.aci.aci_bulk_static_binding_to_epg:
+        tenant: "{{ tenant_name }}"
+        ap: "{{ item.ap }}"
+        epg: "{{ item.name }}"
+        interface_configs: "{{ item.static_ports }}"
+      loop: "{{ epgs }}"
+      when: item.static_ports is defined and ( item.static_ports | length )

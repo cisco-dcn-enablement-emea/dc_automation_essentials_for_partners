@@ -1,0 +1,55 @@
+# ACI playbook - Create Tenant - Security Policies
+---
+- name: Create Tenant Security Policies
+  hosts: apic
+  gather_facts: no
+
+  vars_files:
+    - dev_tn_variables.yaml
+
+  tasks:
+    - name: Add contracts
+      cisco.aci.aci_contract:
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.name }}"
+        description: "{{ item.description | default(omit) }}"
+        scope: "{{ item.scope | default('context') }}"
+      loop: "{{ contracts }}"
+
+    - name: Add contract subjects
+      cisco.aci.aci_contract_subject:
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.name }}"
+        subject: "{{ item.subject | default(item.name) }}"
+        reverse_filter: "{{ item.reverse_filter }}"
+      loop: "{{ contracts }}"
+
+    - name: Bind filters to contract subjects
+      cisco.aci.aci_contract_subject_to_filter:
+        tenant: "{{ tenant_name }}"
+        contract: "{{ item.0.name }}"
+        subject: "{{ item.0.subject | default(item.0.name) }}"
+        filter: "{{ item.1 }}"
+        log: log
+      loop: "{{ contracts | subelements('filters', skip_missing=True) }}"
+
+    - name: Add filters
+      cisco.aci.aci_filter:
+        tenant: "{{ tenant_name }}"
+        filter: "{{ item.name }}"
+      loop: "{{ filters }}"
+
+    - name: Add filter entries
+      cisco.aci.aci_filter_entry:
+        tenant: "{{ tenant_name }}"
+        filter: "{{ item.0.name }}"
+        entry: "{{ item.1.entry }}"
+        ether_type: "{{ item.1.ethertype }}"
+        ip_protocol: "{{ item.1.ip_protocol }}"
+        src_port: "{{ item.1.src_port | default(omit) }}"
+        src_port_start: "{{ item.1.src_port_start | default(omit) }}"
+        src_port_end: "{{ item.1.src_port_end | default(omit) }}"
+        dst_port: "{{ item.1.dst_port | default(omit) }}"
+        dst_port_start: "{{ item.1.dst_port_start | default(omit) }}"
+        dst_port_end: "{{ item.1.dst_port_end | default(omit) }}"
+      loop: "{{ filters | subelements('entries', skip_missing=True) }}"

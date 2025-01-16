@@ -7,11 +7,6 @@
     fabric_mtu: "9216"
     fabric_asn: "65399"
     fabric_name: mil-cml-isn
-    # isn1: 172.23.254.151
-    # isn2: 172.23.254.153
-    # isn3: 172.23.254.154
-    # isn4: 172.23.254.155
-    # isn5: 172.23.254.156
   vars_files:
     - mil-cml-isn_vars.yml
   tasks:

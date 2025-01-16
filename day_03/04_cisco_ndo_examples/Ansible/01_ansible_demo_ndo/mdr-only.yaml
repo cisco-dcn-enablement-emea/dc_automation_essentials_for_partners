@@ -1,0 +1,65 @@
+---
+- name: Configure objects in MDR1 Only template
+  block:
+    - name: Add BD
+      cisco.mso.mso_schema_template_bd:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        bd: 192.168.3.0_24_bd
+        vrf:
+          name: main_vrf
+          template: StretchedBase
+        arp_flooding: yes
+        layer2_stretch: no
+        layer2_unknown_unicast: proxy
+        unicast_routing: yes
+        state: "{{ state }}"
+
+    - name: Configure site BD
+      cisco.mso.mso_schema_site_bd:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        site: MDR1
+        bd: 192.168.3.0_24_bd
+        state: "{{ state }}"
+
+    - name: Add BD Local Subnet
+      cisco.mso.mso_schema_site_bd_subnet:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        site: MDR1
+        bd: 192.168.3.0_24_bd
+        subnet: 192.168.3.1/24
+        state: "{{ state }}"
+
+    - name: Add ANP
+      cisco.mso.mso_schema_template_anp:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        anp: demo_app
+        state: "{{ state }}"
+
+    - name: Add Database EPG
+      cisco.mso.mso_schema_template_anp_epg:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        anp: demo_app
+        epg: database_epg
+        preferred_group: yes
+        bd:
+          name: 192.168.3.0_24_bd
+        state: "{{ state }}"
+
+    - name: Add VMM Domain to EPGs in site 1
+      cisco.mso.mso_schema_site_anp_epg_domain:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        site: MDR1
+        anp: demo_app
+        epg: database_epg
+        domain_association_type: vmmDomain
+        domain_profile: vmm_vds
+        deployment_immediacy: lazy
+        resolution_immediacy: pre-provision
+        state: "{{ state }}"
+  tags: configure

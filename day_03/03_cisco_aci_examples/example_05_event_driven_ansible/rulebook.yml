@@ -1,0 +1,32 @@
+---
+# Command to run the rulebook with specified inventory and rulebook file, printing events as they occur.
+# ansible-rulebook -i inventory.yml -r rulebook.yml --print-events
+
+- name: Configure Cisco ACI ESG Tags from Netbox
+  # Define the hosts group from the inventory where this rulebook will apply.
+  hosts: apic
+
+  sources:
+    # Define the source of events, in this case, a webhook that listens on all interfaces at port 8080.
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 8080
+
+  rules:
+    - name: IP Address Created or Modified in Netbox
+      condition: |
+        event.payload.data.tenant.name == "esg" and event.payload.data.tags is defined and (event.payload.event == "created" or event.payload.event == "updated")
+      action:
+        run_playbook:
+          name: update_policy_tags.yml
+          extra_vars:
+            data: "{{ event.payload.data }}"
+
+    - name: IP Address Deleted in Netbox
+      condition: |
+        event.payload.data.tenant.name == "esg" and event.payload.event == "deleted"
+      action:
+        run_playbook:
+          name: delete_policy_tags.yml
+          extra_vars:
+            data: "{{ event.payload.data }}"

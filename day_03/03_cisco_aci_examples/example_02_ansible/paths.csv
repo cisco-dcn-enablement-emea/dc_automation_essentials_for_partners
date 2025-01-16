@@ -1,0 +1,17 @@
+﻿tenant,app_profile,epg,static_binding_type,interface_policy,access_port_id,left_node_id,right_node_id,encap_vlan_id,mode
+Company-Tenant,app-prod,epg-web,Access,,eth1/8,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/9,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/10,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/11,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/12,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/13,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/14,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/15,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/16,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/17,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/18,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/19,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/20,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/21,2101,,111,regular
+Company-Tenant,app-prod,epg-web,Access,,eth1/22,2101,,111,regular
+Company-Tenant,app-prod,epg-web,vPC,vpc_core,,2101,2102,111,regular

@@ -154,11 +154,3 @@ resource "nxos_bgp_advertised_prefix" "bgp_advertised_prefix_config" {
   address_family = "ipv4-ucast"                       // Address family
   prefix         = "${cidrsubnet(var.subinterface_ip, 0, 0)}"  // Prefix to advertise
 }
-
-resource "nxos_rest" "hsrpEntity" {
-  dn         = "sys/bgpEntity/bgpInst"
-  class_name = "hsrpEntity"
-  content = {
-    adminSt = "enabled"
-  }
-}

@@ -1,0 +1,84 @@
+---
+- name: Deploy Stretched Base template
+  block:
+    - name: Query deployment plan
+      cisco.mso.mso_schema_template_deploy_status:
+        schema: ndo_ansible_demo
+        template: StretchedBase
+        state: query
+      register: deploy_status
+
+    - name: Save deployment plan to a file
+      ansible.builtin.copy:
+        content: "{{ deploy_status.current | to_nice_json }}"
+        dest: plans/stretched-base-deployment-plan.json
+
+    - name: Deploy template
+      cisco.mso.ndo_schema_template_deploy:
+        schema: ndo_ansible_demo
+        template: StretchedBase
+        state: "{{ deployment_state }}"
+  tags: deploy
+
+- name: Deploy Stretched template
+  block:
+    - name: Query deployment plan
+      cisco.mso.mso_schema_template_deploy_status:
+        schema: ndo_ansible_demo
+        template: Stretched
+        state: query
+      register: deploy_status
+
+    - name: Save deployment plan to a file
+      ansible.builtin.copy:
+        content: "{{ deploy_status.current | to_nice_json }}"
+        dest: plans/stretched-deployment-plan.json
+
+    - name: Deploy template
+      cisco.mso.ndo_schema_template_deploy:
+        schema: ndo_ansible_demo
+        template: Stretched
+        state: "{{ deployment_state }}"
+  tags: deploy
+
+- name: Deploy MDR1 Only template
+  block:
+    - name: Query deployment plan
+      cisco.mso.mso_schema_template_deploy_status:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        state: query
+      register: deploy_status
+
+    - name: Save deployment plan to a file
+      ansible.builtin.copy:
+        content: "{{ deploy_status.current | to_nice_json }}"
+        dest: plans/mdr1-deployment-plan.json
+
+    - name: Deploy template
+      cisco.mso.ndo_schema_template_deploy:
+        schema: ndo_ansible_demo
+        template: MDR1 Only
+        state: "{{ deployment_state }}"
+  tags: deploy
+
+- name: Deploy MLG1 Only template
+  block:
+    - name: Query deployment plan
+      cisco.mso.mso_schema_template_deploy_status:
+        schema: ndo_ansible_demo
+        template: MLG1 Only
+        state: query
+      register: deploy_status
+
+    - name: Save deployment plan to a file
+      ansible.builtin.copy:
+        content: "{{ deploy_status.current | to_nice_json }}"
+        dest: plans/mlg1-deployment-plan.json
+
+    - name: Deploy template
+      cisco.mso.ndo_schema_template_deploy:
+        schema: ndo_ansible_demo
+        template: MLG1 Only
+        state: "{{ deployment_state }}"
+  tags: deploy

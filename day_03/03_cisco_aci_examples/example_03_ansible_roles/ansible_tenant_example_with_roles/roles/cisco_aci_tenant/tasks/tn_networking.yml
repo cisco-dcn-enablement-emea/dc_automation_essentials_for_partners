@@ -1,0 +1,49 @@
+# Create Tenant Networking
+---
+- name: Configure Tenant Networking
+  block:
+    - name: Add VRFs
+      cisco.aci.aci_vrf:
+        tenant: "{{ item.tenant_name }}"
+        vrf: "{{ item.tenant_vrf_name }}"
+        name_alias: "{{ item.tenant_vrf_alias | default(omit) }}"
+        description: "{{ item.tenant_vrf_description | default(omit) }}"
+        ip_data_plane_learning: "enabled"
+        policy_control_direction: "ingress"
+        policy_control_preference: "enforced"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'vrf') }}"
+
+    - name: Add Bridge Domains
+      cisco.aci.aci_bd:
+        tenant: "{{ item.tenant_name }}"
+        bd: "{{ item.tenant_bd_name }}"
+        name_alias: "{{ item.tenant_bd_alias | default(omit) }}"
+        description: "{{ item.tenant_bd_description | default(omit) }}"
+        vrf: "{{ item.tenant_bd_vrf }}"
+        l2_unknown_unicast: "{{ 'proxy' if (item.tenant_bd_mode == 'L3') else 'flood' }}"
+        l3_unknown_multicast: flood
+        arp_flooding: yes
+        enable_routing: "{{ 'yes' if (item.tenant_bd_mode == 'L3') else 'no' }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'bd') }}"
+
+    - name: Add subnets
+      cisco.aci.aci_bd_subnet:
+        tenant: "{{ item.tenant_name }}"
+        bd: "{{ item.tenant_bd_name }}"
+        gateway: "{{ item.tenant_bd_subnet_ip.split('/')[0] }}"
+        mask: "{{ item.tenant_bd_subnet_ip.split('/')[1] }}"
+        scope: "{{ [('public' if item.tenant_bd_subnet_public else 'private'), ('shared' if item.tenant_bd_subnet_shared else '')] | select() }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'bd', 'subnet') }}"
+      when: item.tenant_bd_mode == "L3"
+
+    - name: Bind L3Outs to Bridge Domains
+      cisco.aci.aci_bd_to_l3out:
+        tenant: "{{ item.tenant_name }}"
+        bd: "{{ item.tenant_bd_name }}"
+        l3out: "{{ item.tenant_bd_l3out_name }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'bd', 'l3out') }}"
+      when: item.tenant_bd_mode == "L3"

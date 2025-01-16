@@ -1,0 +1,377 @@
+{
+	"info": {
+		"_postman_id": "de33d6c5-1efa-494c-bd6f-12605b9a74bd",
+		"name": "NDO Webinar Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5932643",
+		"_collection_link": "https://gold-meadow-403165.postman.co/workspace/NexusDashboard~a3dd052d-a893-4f32-9a1e-423c078cfcc2/collection/5932643-de33d6c5-1efa-494c-bd6f-12605b9a74bd?action=share&source=collection_link&creator=5932643"
+	},
+	"item": [
+		{
+			"name": "Get all sites",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save site IDs",
+							"var jsonData = JSON.parse(responseBody);",
+							"for(const site of jsonData.sites) {",
+							"    pm.globals.set(\"site-\" + site.common.name, site.id);",
+							"};"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v2/sites",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v2",
+						"sites"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save site IDs",
+							"var jsonData = JSON.parse(responseBody);",
+							"for(const user of jsonData) {",
+							"    pm.globals.set(\"user-\" + user.loginID, user.userID);",
+							"};"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v2/users",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v2",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all tenants",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save tenant IDs",
+							"var jsonData = JSON.parse(responseBody);",
+							"for(const tenant of jsonData.tenants) {",
+							"    pm.globals.set(\"tn-\" + tenant.name, tenant.id);",
+							"};"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get tenant",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.collectionVariables.set(\"tenant_id\", jsonData.id);",
+							"pm.collectionVariables.set(\"update_version\", jsonData._updateVersion);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants/{{tenant_id}}",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants",
+						"{{tenant_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create tenant",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.collectionVariables.set(\"tenant_id\", jsonData.id);",
+							"pm.collectionVariables.set(\"update_version\", jsonData._updateVersion);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"test_api_tn\",\n    \"displayName\": \"test_api_tn\",\n    \"siteAssociations\": [\n        {\n            \"siteId\": \"{{site-MDR1}}\",\n            \"securityDomains\": []\n        },\n        {\n            \"siteId\": \"{{site-MLG1}}\",\n            \"securityDomains\": []\n        }\n    ],\n    \"userAssociations\": [\n        {\n            \"userId\": \"{{user-orchestrator}}\"\n        }\n    ]\n}\n\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update tenant",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.collectionVariables.set(\"tenant_id\", jsonData.id);",
+							"pm.collectionVariables.set(\"update_version\", jsonData._updateVersion);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"test_api_tn\",\n    \"displayName\": \"test_api_tn\",\n    \"siteAssociations\": [\n        {\n            \"siteId\": \"{{site-MDR1}}\",\n            \"securityDomains\": []\n        }\n    ],\n    \"userAssociations\": [\n        {\n            \"userId\": \"{{user-orchestrator}}\"\n        }\n    ],\n    \"_updateVersion\": {{update_version}}\n}\n\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants/{{tenant_id}}?enableVersionCheck=true",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants",
+						"{{tenant_id}}"
+					],
+					"query": [
+						{
+							"key": "enableVersionCheck",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Modify tenant",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n    {\n        \"op\": \"add\",\n        \"path\": \"/siteAssociations/-\",\n        \"value\": {\n            \"siteId\": \"{{site-MLG1}}\",\n            \"securityDomains\": []\n        },\n        \"_updateVersion\": {{update_version}}\n    }\n]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants/{{tenant_id}}?enableVersionCheck=true",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants",
+						"{{tenant_id}}"
+					],
+					"query": [
+						{
+							"key": "enableVersionCheck",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete tenant",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "https://{{nd_host}}/mso/api/v1/tenants/{{tenant_id}}?msc-only=false",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"mso",
+						"api",
+						"v1",
+						"tenants",
+						"{{tenant_id}}"
+					],
+					"query": [
+						{
+							"key": "msc-only",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"userName\": \"{{nd_username}}\",\n  \"userPasswd\": \"{{nd_passwd}}\",\n  \"domain\": \"{{nd_domain}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{nd_host}}/login",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Refresh",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{nd_host}}/refresh",
+					"protocol": "https",
+					"host": [
+						"{{nd_host}}"
+					],
+					"path": [
+						"refresh"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

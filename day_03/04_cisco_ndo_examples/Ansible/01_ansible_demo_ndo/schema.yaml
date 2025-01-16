@@ -1,0 +1,55 @@
+---
+- name: Configure tenant, schema and templates
+  block:
+    - name: Create Tenant
+      cisco.mso.mso_tenant:
+        tenant: ndo_ansible_demo
+        display_name: ndo_ansible_demo
+        users:
+          - "{{ ansible_user }}"
+        sites:
+          - "MDR1"
+          - "MLG1"
+        state: "{{ state }}"
+
+    - name: Add schema and stretched template
+      cisco.mso.mso_schema_template:
+        tenant: ndo_ansible_demo
+        schema: ndo_ansible_demo
+        template: Stretched
+        state: "{{ state }}"
+
+    - name: Add additional templates to schema
+      cisco.mso.mso_schema_template:
+        tenant: ndo_ansible_demo
+        schema: ndo_ansible_demo
+        template: "{{ item }}"
+        state: "{{ state }}"
+      loop:
+        - StretchedBase
+        - MDR1 Only
+        - MLG1 Only
+
+    - name: Add site 1 to schemas
+      cisco.mso.mso_schema_site:
+        schema: ndo_ansible_demo
+        site: MDR1
+        template: "{{ item }}"
+        state: "{{ state }}"
+      loop:
+        - Stretched
+        - StretchedBase
+        - MDR1 Only
+
+    - name: Add site 2 to schemas
+      cisco.mso.mso_schema_site:
+        schema: ndo_ansible_demo
+        site: MLG1
+        template: "{{ item }}"
+        state: "{{ state }}"
+      loop:
+        - Stretched
+        - StretchedBase
+        - MLG1 Only
+  tags:
+    - configure

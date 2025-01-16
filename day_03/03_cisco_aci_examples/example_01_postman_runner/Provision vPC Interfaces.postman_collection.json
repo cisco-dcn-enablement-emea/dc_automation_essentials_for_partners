@@ -1,0 +1,94 @@
+{
+	"info": {
+		"_postman_id": "e88d15ca-fa7d-437a-bcd7-6a00b4986d3a",
+		"name": "Provision vPC Interfaces",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5932643"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "text/xml"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<aaaUser  name='{{apic_username}}' pwd='{{apic_password}}' />"
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/aaaLogin.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"aaaLogin.xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateVPCPolicyGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<infraAccBndlGrp annotation=\"\" descr=\"\" dn=\"uni/infra/funcprof/accbundle-{{name}}\" lagT=\"node\" name=\"{{name}}\" >\n    <infraRsAttEntP annotation=\"\" tDn=\"uni/infra/attentp-{{aaep}}\"/>\n    <infraRsCdpIfPol annotation=\"\" tnCdpIfPolName=\"{{cdp}}\"/>\n    <infraRsLldpIfPol annotation=\"\" tnLldpIfPolName=\"{{lldp}}\"/>\n    <infraRsHIfPol annotation=\"\" tnFabricHIfPolName=\"{{link}}\"/>\n    <infraRsLacpPol annotation=\"\" tnLacpLagPolName=\"{{lacp}}\"/>\n</infraAccBndlGrp>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo.xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AssociateVPCPolicyGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<infraAccPortP annotation=\"\" descr=\"\" dn=\"uni/infra/accportprof-leaf_{{leaf}}\" name=\"leaf_{{leaf}}\" nameAlias=\"\" ownerKey=\"\" ownerTag=\"\" userdom=\":all:\">\n    <infraHPortS annotation=\"\" descr=\"\" name=\"{{name}}\" nameAlias=\"\" ownerKey=\"\" ownerTag=\"\" type=\"range\" userdom=\":all:\">\n        <infraRsAccBaseGrp annotation=\"\" fexId=\"101\" tDn=\"uni/infra/funcprof/accbundle-{{name}}\" userdom=\":all:\"/>\n        <infraPortBlk annotation=\"\" descr=\"\" fromCard=\"1\" fromPort=\"{{from_port}}\" name=\"block2\" nameAlias=\"\" toCard=\"1\" toPort=\"{{to_port}}\" userdom=\":all:\"/>\n    </infraHPortS>\n</infraAccPortP>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo.xml"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

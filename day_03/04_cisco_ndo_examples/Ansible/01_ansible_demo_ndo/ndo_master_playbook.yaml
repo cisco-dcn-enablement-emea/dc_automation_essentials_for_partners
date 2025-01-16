@@ -1,0 +1,40 @@
+---
+- name: NDO Master Playbook - Deploy NDO configuration
+  hosts: ndo
+  connection: httpapi
+  gather_facts: no
+
+  vars:
+    state: present
+    deployment_state: undeploy
+    # deployment_state can be deploy|redeploy|undeploy|query
+
+  tasks:
+    - name: Configure Tenant, Schemas and templates
+      include_tasks: schema.yaml
+
+    - name: Configure Stretched Base Template
+      include_tasks: stretched-base.yaml
+      tags: configure
+
+    - name: Configure Stretched Template
+      include_tasks: stretched.yaml
+      tags: configure
+
+    - name: Configure MDR1 Only Template
+      include_tasks: mdr-only.yaml
+      tags: configure
+
+    - name: Configure MLG1 Only Template
+      include_tasks: mlg-only.yaml
+      tags: configure
+
+    - name: Deploy templates in the right order
+      include_tasks: deploy.yaml
+      when: deployment_state != 'undeploy'
+      tags: deploy
+
+    - name: Undeploy templates in the right order
+      include_tasks: undeploy.yaml
+      when: deployment_state == 'undeploy'
+      tags: undeploy

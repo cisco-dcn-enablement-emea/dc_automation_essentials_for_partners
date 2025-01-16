@@ -14,9 +14,9 @@ pattern = r"eth(\d+)/(\d+)"
 
 # Inventory of devices
 inventory = [{
-    "host": "172.23.254.156",
+    "host": "10.58.30.203",
     "auth_username": "admin",
-    "auth_password": "Cisco123!",
+    "auth_password": os.getenv("LAB_PASSWORD"),
     "port": 50051,
     "path": "myCA.pem", # Ensure that you have this Certification Authority pem file in the folder. Follow 00_enable_gnmi_on_nx-os.md instructions 
     "insecure": False

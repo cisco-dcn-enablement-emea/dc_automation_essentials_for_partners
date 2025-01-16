@@ -1,0 +1,9 @@
+# Creates tenants root object
+---
+- name: Create Tenants
+  block:
+    - name: Add tenants
+      aci_tenant:
+        tenant: "{{ item.tenant_name }}"
+        description: "{{ item.tenant_description }}"
+      loop: "{{ data | aci_listify('tenant') }}"

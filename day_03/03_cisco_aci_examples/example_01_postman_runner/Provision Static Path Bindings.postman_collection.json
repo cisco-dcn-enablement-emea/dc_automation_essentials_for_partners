@@ -1,0 +1,108 @@
+{
+	"info": {
+		"_postman_id": "a1d02ebd-c187-47b2-8dbc-99037b696a49",
+		"name": "Provision Static Path Bindings",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5932643"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "text/xml"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<aaaUser  name='{{apic_username}}' pwd='{{apic_password}}' />"
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/aaaLogin.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"aaaLogin.xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create EPG Static Path Binding",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"static_binding_type = pm.variables.get(\"static_binding_type\");",
+							"interface_policy = pm.variables.get(\"interface_policy\");",
+							"access_port_id = pm.variables.get(\"access_port_id\");",
+							"left_node_id = pm.variables.get(\"left_node_id\");",
+							"right_node_id = pm.variables.get(\"right_node_id\");",
+							"",
+							"if (static_binding_type == \"Access\") {",
+							"    pm.collectionVariables.set(\"path\", \"topology/pod-1/paths-\" + left_node_id + \"/pathep-[\" + access_port_id + \"]\");",
+							"} else if (static_binding_type == \"PC\") {",
+							"    pm.collectionVariables.set(\"path\", \"topology/pod-1/paths-\" + left_node_id + \"/pathep-[\" + interface_policy + \"]\");",
+							"} else if (static_binding_type == \"vPC\") {",
+							"    pm.collectionVariables.set(\"path\", \"topology/pod-1/protpaths-\" + left_node_id + \"-\" + right_node_id + \"/pathep-[\" + interface_policy + \"]\");",
+							"}",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "<fvRsPathAtt dn=\"uni/tn-{{tenant}}/ap-{{app_profile}}/epg-{{epg}}/rspathAtt-[{{path}}]\" encap=\"vlan-{{encap_vlan_id}}\" instrImedcy=\"lazy\" mode=\"{{mode}}\" primaryEncap=\"unknown\" tDn=\"{{path}}\" userdom=\":all:\"/>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo.xml"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "path",
+			"value": ""
+		}
+	]
+}

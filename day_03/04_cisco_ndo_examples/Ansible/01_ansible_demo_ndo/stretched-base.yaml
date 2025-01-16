@@ -1,0 +1,11 @@
+---
+- name: Configure objects in Stretched Base template
+  block:
+    - name: Add VRF
+      cisco.mso.mso_schema_template_vrf:
+        schema: ndo_ansible_demo
+        template: StretchedBase
+        vrf: main_vrf
+        preferred_group: true
+        state: "{{ state }}"
+  tags: configure

@@ -1,0 +1,41 @@
+# ACI playbook - Provision VPC interfaces
+---
+- name: Provision vPC interfaces
+  hosts: apic
+  gather_facts: no
+
+  tasks:
+    - name: Read CSV file
+      community.general.read_csv:
+        path: vpc_interfaces.csv
+      register: vpc_interfaces
+      delegate_to: localhost
+
+    - name: Create Interface Policy Group
+      cisco.aci.aci_interface_policy_leaf_policy_group:
+        lag_type: node
+        policy_group: "{{ item.name }}"
+        aep_name: "{{ item.aaep }}"
+        cdp_policy: "{{ item.cdp }}"
+        lldp_policy: "{{ item.lldp }}"
+        link_level_policy: "{{ item.link }}"
+        port_channel_policy: "{{ item.lacp }}"
+        state: present
+      loop: "{{ vpc_interfaces.list }}"
+
+    - name: Create Leaf Interface Profile
+      cisco.aci.aci_interface_policy_leaf_profile:
+        name: "leaf_{{ item.leaf }}"
+        state: present
+      loop: "{{ vpc_interfaces.list | unique(attribute='leaf') }}"
+
+    - name: Associate Interface Access Port Selector to an Interface Policy Leaf Profile with a Policy Group
+      cisco.aci.aci_access_port_to_interface_policy_leaf_profile:
+        name: "{{ item.name }}"
+        interface_profile: "leaf_{{ item.leaf }}"
+        port_blk_name: "{{ item.name }}"
+        from_port: "{{ item.from_port }}"
+        to_port: "{{ item.to_port }}"
+        policy_group: "{{ item.name }}"
+        state: present
+      loop: "{{ vpc_interfaces.list }}"

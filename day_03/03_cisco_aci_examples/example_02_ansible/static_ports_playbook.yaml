@@ -1,0 +1,34 @@
+# ACI playbook - Provision Static Ports
+---
+- name: Provision Static Ports
+  hosts: apic
+  gather_facts: no
+
+  tasks:
+    - name: Read CSV file
+      community.general.read_csv:
+        path: paths.csv
+      register: paths
+      delegate_to: localhost
+
+    - name: Create mapping of interface types
+      set_fact:
+        interface_types:
+          Access: switch_port
+          PC: port_channel
+          vPC: vpc
+
+    - name: Deploy Static Path binding for given EPG
+      cisco.aci.aci_static_binding_to_epg:
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.app_profile }}"
+        epg: "{{ item.epg }}"
+        encap_id: "{{ item.encap_vlan_id }}"
+        deploy_immediacy: lazy
+        interface_mode: "{{ item.mode }}"
+        interface_type: "{{ interface_types[item.static_binding_type] }}"
+        pod_id: 1
+        leafs: "{{ ((item.left_node_id,item.right_node_id) | list) if item.static_binding_type == 'vPC' else [item.left_node_id] }}"
+        interface: "{{ (item.access_port_id | replace('eth', '')) if item.static_binding_type == 'Access' else item.interface_policy }}"
+        state: present
+      loop: "{{ paths.list }}"

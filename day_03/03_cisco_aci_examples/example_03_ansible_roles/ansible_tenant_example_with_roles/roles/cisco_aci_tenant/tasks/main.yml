@@ -1,0 +1,8 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for cisco_aci_tenant
+
+- include_tasks: tn_root.yml
+- include_tasks: tn_networking.yml
+- include_tasks: tn_app_profiles.yml
+- include_tasks: tn_security.yml

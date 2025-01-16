@@ -1,0 +1,30 @@
+# ACI playbook - Delete Endpoint Policy Tags Playbook
+---
+- name: Delete Endpoint Policy Tags
+  hosts: apic
+  gather_facts: no
+
+  vars:
+    tenant: esg
+    ip: "{{ data.address | split('/') | first }}"
+    vrf: "{{ data.vrf.name }}"
+    policy_tags: "{{ data.tags | map(attribute='name') }}"
+
+  tasks:
+    - name: Get endpoint information
+      cisco.aci.aci_rest:
+        method: get
+        path: /api/mo/uni/tn-{{ tenant }}.json?query-target=subtree&target-subtree-class=fvIp&query-target-filter=eq(fvIp.addr,"{{ ip }}")
+      register: endpoint_ip_info
+
+    - name: Get endpoint MAC address
+      set_fact:
+        mac_addr: "{{ endpoint_ip_info.imdata[0].fvIp.attributes.dn | regex_search('cep-(.*)/', '\\1') | first }}"
+        bd_name: "{{ endpoint_ip_info.imdata[0].fvIp.attributes.bdDn | regex_search('BD-(.*)$', '\\1') | first }}"
+      when: endpoint_ip_info.totalCount > 0
+
+    - name: Delete Endpoint Policy Tags
+      cisco.aci.aci_rest:
+        method: delete
+        path: /api/mo/uni/tn-{{ tenant }}/eptags/epmactag-{{ mac_addr }}-[{{ bd_name }}].json
+      when: endpoint_ip_info.totalCount > 0

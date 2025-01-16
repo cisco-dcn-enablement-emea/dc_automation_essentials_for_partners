@@ -1,0 +1,57 @@
+# Create Tenant Application Profiles
+---
+- name: Configure Tenant App Profiles
+  block:
+    - name: Add Application Profiles
+      cisco.aci.aci_ap:
+        tenant: "{{ item.tenant_name }}"
+        ap: "{{ item.tenant_app_name }}"
+        name_alias: "{{ item.tenant_app_alias | default(omit) }}"
+        description: "{{ item.tenant_app_description | default(omit) }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'app') }}"
+
+    - name: Add EPGs
+      cisco.aci.aci_epg:
+        tenant: "{{ item.tenant_name }}"
+        ap: "{{ item.tenant_app_name }}"
+        epg: "{{ item.tenant_app_epg_name }}"
+        name_alias: "{{ item.tenant_app_epg_alias | default(omit) }}"
+        description: "{{ item.tenant_app_epg_description | default(omit) }}"
+        bd: "{{ item.tenant_app_epg_bd }}"
+        preferred_group: "{{ item.tenant_app_epg_prefGroup }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'app', 'epg') }}"
+
+    - name: Associate contracts to EPGs
+      cisco.aci.aci_epg_to_contract:
+        tenant: "{{ item.tenant_name }}"
+        ap: "{{ item.tenant_app_name }}"
+        epg: "{{ item.tenant_app_epg_name }}"
+        contract: "{{ item.tenant_app_epg_contract_name }}"
+        contract_type: "{{ item.tenant_app_epg_contract_type }}"
+        state: present
+      loop: "{{ data | aci_listify('tenant', 'app', 'epg', 'contract') }}"
+
+    - name: Add domain bindings to EPGs
+      cisco.aci.aci_epg_to_domain:
+        tenant: "{{ item.tenant_name }}"
+        ap: "{{ item.tenant_app_name }}"
+        epg: "{{ item.tenant_app_epg_name }}"
+        domain: "{{ item.tenant_app_epg_domain_name }}"
+        domain_type: "{{ item.tenant_app_epg_domain_type }}"
+        vm_provider: "{{ item.tenant_app_epg_domain_provider | default(omit) }}"
+      loop: "{{ data | aci_listify('tenant', 'app', 'epg', 'domain') }}"
+
+    - name: Add Static Path bindings to EPGs
+      cisco.aci.aci_static_binding_to_epg:
+        tenant: "{{ item.tenant_name }}"
+        ap: "{{ item.tenant_app_name }}"
+        epg: "{{ item.tenant_app_epg_name }}"
+        pod: "{{ item.tenant_app_epg_static_port_pod }}"
+        leafs: "{{ item.tenant_app_epg_static_port_leafs }}"
+        interface: "{{ item.tenant_app_epg_static_port_interface }}"
+        interface_type: "{{ item.tenant_app_epg_static_port_interface_type }}"
+        mode: "{{ item.tenant_app_epg_static_port_mode }}"
+        encap_id: "{{ item.tenant_app_epg_static_port_encap_id }}"
+      loop: "{{ data | aci_listify('tenant', 'app', 'epg', 'static_port') }}"

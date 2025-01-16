@@ -1,0 +1,644 @@
+{
+	"info": {
+		"_postman_id": "62c67f68-c1bd-453d-8cb8-b827b9782c63",
+		"name": "Webinar Query Demos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5932643"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.environment.set(\"token\", pm.cookies.all(pm.environment.get(\"apic\"))[0].value);",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "text/xml"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<aaaUser  name='{{apic_username}}' pwd='{{apic_password}}' />"
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/aaaLogin.xml",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"aaaLogin.xml"
+					]
+				},
+				"description": "#### Description \nQuery to login into the APIC and retrieve the token.\n\nIt requires to specify `apic_username` and `apic_password` variables."
+			},
+			"response": []
+		},
+		{
+			"name": "GetContracts",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/node/class/vzBrCP.json",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"node",
+						"class",
+						"vzBrCP.json"
+					]
+				},
+				"description": "#### Description\nSimple query to retrieve all objects of a given class; in this example, contracts (vzBrCP)\n\n#### Expected Result\nThis query retrieves all objects of the given class and their attributes. It does not retrieve children objects."
+			},
+			"response": []
+		},
+		{
+			"name": "GetAppProfile",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvAp",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvAp"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves all the object of the class specified in the `target-subtree-class` query argument that are part of the tenant `Company-Tenant`\n\n#### Expected Result\nThis query targets all objects in the subtree of `Company-Tenant`, and from there it queries and retrieves all objects of the classes specified in `target-subtree-class`.\n\nUser can specify one or many classes (separated by comma). When providing multiple classes, the result returns all objects from the requested classes, not considering parent-child relationship (i.e. if requesting fvAP and fvAEPg, fvAEPg objects will not be under the parent fvAP)"
+			},
+			"response": []
+		},
+		{
+			"name": "GetBDSubnets",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvSubnet",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvSubnet"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves all the object of the class specified in the `target-subtree-class` query argument that are part of the tenant `Company-Tenant`; in this case fvSubnet.\n\n#### Expected Result\nThis query targets all objects in the subtree of `Company-Tenant`, and from there it queries and retrieves all objects of the classes specified in `target-subtree-class`.\n\nUser can specify one or many classes (separated by comma). When providing multiple classes, the result returns all objects from the requested classes, not considering parent-child relationship (i.e. if requesting fvAP and fvAEPg, fvAEPg objects will not be under the parent fvAP)"
+			},
+			"response": []
+		},
+		{
+			"name": "GetBDPublicSubnets",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvSubnet&query-target-filter=eq(fvSubnet.scope, \"public\")",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvSubnet"
+						},
+						{
+							"key": "query-target-filter",
+							"value": "eq(fvSubnet.scope, \"public\")"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves all the object of the class specified in the `target-subtree-class` query argument that are part of the tenant `Company-Tenant` (in this case, fvSubnet) that meet the specific filter condition.\n\n#### Expected Result\nThis query targets all objects in the subtree of `Company-Tenant`, and from there it queries and retrieves all objects of the classes specified in `target-subtree-class` that also satisfy the conditions specified in the filter  `query-target-filter`.\n\nConditions can use different operators (and, or, eq, gt, ...) to build complex filters when needed."
+			},
+			"response": []
+		},
+		{
+			"name": "GetEPGs",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvAEPg&rsp-subtree=full&rsp-prop-include=config-only",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvAEPg"
+						},
+						{
+							"key": "rsp-subtree",
+							"value": "full"
+						},
+						{
+							"key": "rsp-prop-include",
+							"value": "config-only"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves all the object of the class specified in the `target-subtree-class` query argument that are part of the tenant `Company-Tenant`, and returns not only the queried object but also their children and its config-only properties.\n\n#### Expected Result\nThis query targets all objects in the subtree of `Company-Tenant`, and from there it queries and retrieves all objects of the classes specified in `target-subtree-class`.\n\nThen using `rsp-` query arguments, the content of the response is controlled. In this case, the full subtree under the queried objects is retrieved (`rsp-subtree=full`), including only the configurable properties (`rsp-prop-include=config-only`)."
+			},
+			"response": []
+		},
+		{
+			"name": "GetEPGContracts",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvAEPg&rsp-subtree=full&rsp-subtree-class=fvRsCons,fvRsProv&rsp-prop-include=config-only&",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvAEPg"
+						},
+						{
+							"key": "rsp-subtree",
+							"value": "full"
+						},
+						{
+							"key": "rsp-subtree-class",
+							"value": "fvRsCons,fvRsProv"
+						},
+						{
+							"key": "rsp-prop-include",
+							"value": "config-only"
+						},
+						{
+							"key": "",
+							"value": null
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves all the object of the class specified in the `target-subtree-class` query argument that are part of the tenant `Company-Tenant`, and returns not only the queried object but also their children of the classes specified in `rsp-subtree-class` and its config-only properties.\n\n#### Expected Result\nThis query targets all objects in the subtree of `Company-Tenant`, and from there it queries and retrieves all objects of the classes specified in `target-subtree-class`.\n\nThen using `rsp-` query arguments, the content of the response is controlled. In this case, objects from classes specified in `rsp-subtree-class` present anywhere in the full subtree under the queried objects are retrieved, including only the configurable properties (`rsp-prop-include=config-only`)."
+			},
+			"response": []
+		},
+		{
+			"name": "GetBDPublicSubnets_rsp",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?rsp-subtree=full&rsp-subtree-class=fvSubnet&rsp-subtree-filter=eq(fvSubnet.scope, \"public\")",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "rsp-subtree",
+							"value": "full"
+						},
+						{
+							"key": "rsp-subtree-class",
+							"value": "fvSubnet"
+						},
+						{
+							"key": "rsp-subtree-filter",
+							"value": "eq(fvSubnet.scope, \"public\")"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves the tenant `Company-Tenant`, and returns all children objects of the classes specified in `rsp-subtree-class` (fvSubnet in this case) that matches the specified filter. \n\n#### Expected Result\nThis query retrieves `Company-Tenant`, including not only its properties but also objects of a given class under it.\n\nUsing `rsp-` query arguments, the content of the response is controlled. In this case, objects from classes specified in `rsp-subtree-class` present anywhere in the full subtree under the queried objects are retrieved **if** they also satisfy the specified filter in `rsp-subtree-filter`."
+			},
+			"response": []
+		},
+		{
+			"name": "GetBDPublicSubnets_rsp2",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?rsp-subtree=full&rsp-subtree-class=fvSubnet&rsp-subtree-filter=eq(fvSubnet.scope, \"public\")&rsp-subtree-include=xxx",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "rsp-subtree",
+							"value": "full"
+						},
+						{
+							"key": "rsp-subtree-class",
+							"value": "fvSubnet"
+						},
+						{
+							"key": "rsp-subtree-filter",
+							"value": "eq(fvSubnet.scope, \"public\")"
+						},
+						{
+							"key": "rsp-subtree-include",
+							"value": "xxx"
+						}
+					]
+				},
+				"description": "#### Description\nThis query retrieves the tenant `Company-Tenant`, and returns all children objects of the classes specified in `rsp-subtree-class` (fvSubnet in this case) that matches the specified filter. \n\n#### Expected Result\nThis query retrieves `Company-Tenant`, including not only its properties but also objects of a given class under it.\n\nUsing `rsp-` query arguments, the content of the response is controlled. In this case, objects from classes specified in `rsp-subtree-class` present anywhere in the full subtree under the queried objects are retrieved **if** they also satisfy the specified filter in `rsp-subtree-filter`.\n\nThe response will also include the additional information and objects specified in `rsp-subtree-include`, such as faults, health, relations, audit logs and more.\n\nrsp-subtree-include possible options are: faults|health|stats|fault-records|health-records|audit-logs|event-logs|relations|relations-with-parent|no-scoped|subtree|deployment|port-deployment|full-deployment|required|count|fault-count|tasks|deployment-records|ep-records"
+			},
+			"response": []
+		},
+		{
+			"name": "GetEPG_Faults",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/mo/uni/tn-{{tenant-name}}.xml?query-target=subtree&target-subtree-class=fvAEPg&rsp-subtree=full&rsp-subtree-include=faults",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"mo",
+						"uni",
+						"tn-{{tenant-name}}.xml"
+					],
+					"query": [
+						{
+							"key": "query-target",
+							"value": "subtree"
+						},
+						{
+							"key": "target-subtree-class",
+							"value": "fvAEPg"
+						},
+						{
+							"key": "rsp-subtree",
+							"value": "full"
+						},
+						{
+							"key": "rsp-subtree-include",
+							"value": "faults"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFaults",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"strictSSL": false
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{apic}}/api/class/faultInst.xml?rsp-prop-include=naming-only&order-by=faultInst.code|asc&page-size=3&page=0",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"class",
+						"faultInst.xml"
+					],
+					"query": [
+						{
+							"key": "rsp-prop-include",
+							"value": "naming-only"
+						},
+						{
+							"key": "order-by",
+							"value": "faultInst.code|asc"
+						},
+						{
+							"key": "page-size",
+							"value": "3"
+						},
+						{
+							"key": "page",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetFaults_Subscription",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var data = pm.response.json()",
+							"console.log(\"Subscription ID: \" + data.subscriptionId)",
+							"pm.collectionVariables.set(\"subscriptionid\", data.subscriptionId);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{apic}}/api/class/faultInst.json?rsp-prop-include=naming-only&subscription=yes",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"class",
+						"faultInst.json"
+					],
+					"query": [
+						{
+							"key": "rsp-prop-include",
+							"value": "naming-only"
+						},
+						{
+							"key": "subscription",
+							"value": "yes"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Subscription Refresh",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{apic}}/api/subscriptionRefresh.json?id={{subscriptionid}}",
+					"protocol": "https",
+					"host": [
+						"{{apic}}"
+					],
+					"path": [
+						"api",
+						"subscriptionRefresh.json"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "{{subscriptionid}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "subscriptionid",
+			"value": ""
+		},
+		{
+			"key": "tenant-name",
+			"value": "Company-Tenant",
+			"type": "string"
+		}
+	]
+}

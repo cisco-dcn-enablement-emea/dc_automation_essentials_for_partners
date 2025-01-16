@@ -1,0 +1,191 @@
+tenant_name: development_tn
+
+vrfs:
+  - name: development_vrf
+    description: Development VRF for the development tenant
+
+bridge_domains:
+  - name: 192.168.1.0_24_bd
+    vrf: development_vrf
+    mode: L3
+    subnets:
+      - ip: 192.168.1.1/24
+        public: yes
+        shared: yes
+    l3out_associations:
+      - l3out: core_l3out
+  - name: 192.168.2.0_24_bd
+    vrf: development_vrf
+    mode: L3
+    subnets:
+      - ip: 192.168.2.1/24
+        public: yes
+        shared: yes
+    l3out_associations:
+      - l3out: core_l3out
+  - name: 192.168.3.0_24_bd
+    vrf: development_vrf
+    mode: L3
+    subnets:
+      - ip: 192.168.3.1/24
+        public: no
+        shared: no
+
+app_profiles:
+  - name: app_demo_ap
+    description: Application Profile for our demo application
+
+# Note: Due to the limitation with subelements, epgs are NOT defined as children of app_profiles but separately
+epgs:
+  - name: web_epg
+    ap: app_demo_ap
+    bd: 192.168.1.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: shared_core_l3out_con
+        type: consumer
+      - contract: web_to_app_con
+        type: consumer
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: app_epg
+    ap: app_demo_ap
+    bd: 192.168.1.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: app_to_db_con
+        type: consumer
+      - contract: web_to_app_con
+        type: provider
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: db_epg
+    ap: app_demo_ap
+    bd: 192.168.2.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: app_to_db_con
+        type: provider
+      - contract: any_to_log_con
+        type: consumer
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+  - name: log_epg
+    ap: app_demo_ap
+    bd: 192.168.3.0_24_bd
+    prefGroup: no
+    contracts:
+      - contract: any_to_log_con
+        type: provider
+    domains:
+      - type: vmm
+        domain: vmm_vds_mlg
+        provider: vmware
+    static_ports:
+      - pod: 1
+        leafs: 1101
+        interface: 1/31
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: 1101
+        interface: 1/32
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: 1101
+        interface: 1/33
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: 1102
+        interface: 1/31
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: 1102
+        interface: 1/32
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: 1102
+        interface: 1/33
+        interface_type: switch_port
+        mode: access
+        encap_id: 100
+      - pod: 1
+        leafs: [1101, 1102]
+        interface: vpc_test
+        interface_type: vpc
+        mode: trunk
+        encap_id: 100
+
+# Note: Due to the limitation with subelements, we have assumed that all contracts have a single subject
+contracts:
+  - name: web_to_app_con
+    descr: Communication between web servers and application backend
+    scope: application-profile
+    subject: http_https
+    reverse_filter: yes
+    filters:
+      - http
+      - https
+  - name: app_to_db_con
+    descr: Communication between application backend and databases
+    scope: application-profile
+    subject: mongodb
+    reverse_filter: yes
+    filters:
+      - mongodb
+  - name: any_to_log_con
+    descr: Communication between application backend and databases
+    scope: application-profile
+    reverse_filter: yes
+    filters:
+      - logstash
+
+filters:
+  - name: http
+    entries:
+      - entry: http
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: http
+  - name: https
+    entries:
+      - entry: https
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: https
+  - name: mongodb
+    entries:
+      - entry: mongodb
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port_start: 27017
+        dst_port_end: 27020
+  - name: logstash
+    entries:
+      - entry: logstash_beats
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: 5044
+      - entry: logstash_api
+        ethertype: ip
+        ip_protocol: tcp
+        dst_port: 9600

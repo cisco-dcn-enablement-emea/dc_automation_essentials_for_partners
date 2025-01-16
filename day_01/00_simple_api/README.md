@@ -28,8 +28,6 @@ pip install -r ../../requirements.txt
 python application.py
 ```
 
-The API will be accessible at `http://127.0.0.1`.
-
 ### API Endpoints
 
 The API provides the following endpoints:
@@ -59,5 +57,5 @@ Ensure you have the necessary configuration and environment variables set up bef
 Ensure you have the required Python packages installed. You can install them using the requirements.txt  file located in the root directory of the project.
 
 ```sh
-pip install -r requirements.txt
+pip install -r ../../requirements.txt
 ```

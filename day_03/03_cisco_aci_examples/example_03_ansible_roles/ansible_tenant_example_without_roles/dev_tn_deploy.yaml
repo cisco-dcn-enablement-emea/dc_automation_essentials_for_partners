@@ -1,0 +1,19 @@
+# ACI playbook - Create Tenant - Includes network, security, and application profiles
+---
+- name: Create Development Tenant
+  hosts: apic
+  gather_facts: no
+
+  vars_files:
+    - dev_tn_variables.yaml
+
+  tasks:
+    - name: Add Development Tenant
+      cisco.aci.aci_tenant:
+        tenant: "{{ tenant_name }}"
+        state: present
+
+# Import playbooks for networking, app profiles and security policies
+- import_playbook: dev_tn_networking.yaml
+- import_playbook: dev_tn_app_profiles.yaml
+- import_playbook: dev_tn_security.yaml
